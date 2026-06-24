@@ -1,0 +1,23 @@
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="960" y2="540" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7ED"/>
+      <stop offset="1" stop-color="#FDEEE6"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="540" rx="28" fill="url(#bg)"/>
+  <circle cx="180" cy="130" r="80" fill="#F7D9B6"/>
+  <circle cx="820" cy="430" r="86" fill="#FFD6C9"/>
+  <rect x="108" y="100" width="744" height="340" rx="24" fill="#FFFFFF" stroke="#F2D8C8" stroke-width="8"/>
+  <path d="M170 350C240 320 300 280 360 252C430 220 500 190 560 170" stroke="#102136" stroke-opacity="0.35" stroke-width="10" stroke-linecap="round"/>
+  <path d="M170 220H540" stroke="#0D8F5A" stroke-width="12" stroke-linecap="round"/>
+  <path d="M170 264H520" stroke="#0D8F5A" stroke-width="12" stroke-linecap="round" stroke-opacity="0.7"/>
+  <path d="M170 308H460" stroke="#0D8F5A" stroke-width="12" stroke-linecap="round" stroke-opacity="0.45"/>
+  <rect x="610" y="164" width="180" height="212" rx="18" fill="#102136"/>
+  <circle cx="700" cy="216" r="28" fill="#F4C84A"/>
+  <path d="M666 284H734" stroke="white" stroke-width="10" stroke-linecap="round"/>
+  <path d="M666 318H718" stroke="white" stroke-width="10" stroke-linecap="round" stroke-opacity="0.7"/>
+  <path d="M666 352H706" stroke="white" stroke-width="10" stroke-linecap="round" stroke-opacity="0.5"/>
+  <rect x="124" y="76" width="272" height="64" rx="14" fill="#102136" fill-opacity="0.88"/>
+  <text x="150" y="116" fill="#FFFFFF" font-size="34" font-family="Arial, Helvetica, sans-serif" font-weight="700">Local Guides</text>
+</svg>

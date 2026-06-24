@@ -282,69 +282,60 @@
 }
 
 .templateCard {
+  --card-tint: #f3fbf7;
+  --card-line: rgba(13, 143, 90, 0.18);
+  --card-image-tint: rgba(13, 143, 90, 0.13);
+  --card-heading: var(--green-dark);
+
   min-height: 330px;
   padding: 22px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--card-line);
   border-radius: 8px;
-  background: #ffffff;
+  background: linear-gradient(180deg, var(--card-tint) 0%, #ffffff 52%);
+}
+
+.templateCard:nth-child(2) {
+  --card-tint: #f2f8fb;
+  --card-line: rgba(42, 129, 151, 0.2);
+  --card-image-tint: rgba(42, 129, 151, 0.14);
+  --card-heading: #22677a;
+}
+
+.templateCard:nth-child(3) {
+  --card-tint: #fff8ed;
+  --card-line: rgba(224, 135, 48, 0.22);
+  --card-image-tint: rgba(244, 200, 74, 0.17);
+  --card-heading: #98611c;
 }
 
 .cardMap {
   position: relative;
   height: 154px;
   overflow: hidden;
-  border: 1px solid #d7e5e2;
+  border: 1px solid var(--card-line);
   border-radius: 8px;
-  background:
-    linear-gradient(90deg, rgba(16, 33, 54, 0.06) 1px, transparent 1px) 0 0 / 34px 34px,
-    linear-gradient(rgba(16, 33, 54, 0.06) 1px, transparent 1px) 0 0 / 34px 34px,
-    radial-gradient(circle at 72% 24%, var(--sky) 0 18%, transparent 19%),
-    radial-gradient(circle at 19% 78%, var(--mint) 0 22%, transparent 23%),
-    #f8fbf8;
+  background: var(--card-tint);
 }
 
-.cardMap::before {
+.cardMap::after {
   position: absolute;
-  top: 34px;
-  left: 22px;
-  width: 76%;
-  height: 74px;
+  inset: 0;
   content: "";
-  border-right: 5px solid var(--green);
-  border-bottom: 5px solid var(--green);
-  border-radius: 50%;
-  transform: rotate(-8deg);
+  background: var(--card-image-tint);
+  mix-blend-mode: multiply;
+  pointer-events: none;
 }
 
-.cardMap span {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  border: 4px solid #ffffff;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 8px 16px rgba(13, 143, 90, 0.24);
-}
-
-.cardMap span:nth-child(1) {
-  top: 34px;
-  left: 32px;
-}
-
-.cardMap span:nth-child(2) {
-  top: 64px;
-  left: 48%;
-  background: var(--coral);
-}
-
-.cardMap span:nth-child(3) {
-  right: 30px;
-  bottom: 30px;
-  background: var(--yellow);
+.cardImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .templateCard h3 {
   margin-top: 22px;
+  color: var(--card-heading);
   font-size: 24px;
   line-height: 1.2;
   letter-spacing: 0;

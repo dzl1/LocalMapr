@@ -1,0 +1,23 @@
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="960" y2="540" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EDF5FF"/>
+      <stop offset="1" stop-color="#E4FBEF"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="540" rx="28" fill="url(#bg)"/>
+  <path d="M90 420L270 250L450 340L630 180L870 300" stroke="#0D8F5A" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 20"/>
+  <circle cx="270" cy="250" r="28" fill="#0D8F5A" stroke="#FFFFFF" stroke-width="8"/>
+  <circle cx="450" cy="340" r="28" fill="#F36F5A" stroke="#FFFFFF" stroke-width="8"/>
+  <circle cx="630" cy="180" r="28" fill="#F4C84A" stroke="#FFFFFF" stroke-width="8"/>
+  <rect x="138" y="110" width="308" height="300" rx="24" fill="#FFFFFF" stroke="#C6DAE8" stroke-width="8"/>
+  <rect x="176" y="158" width="232" height="132" rx="12" fill="#EAF4F9"/>
+  <path d="M198 264L248 214L288 246L338 188L386 236" stroke="#086242" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M182 326H378" stroke="#102136" stroke-opacity="0.35" stroke-width="10" stroke-linecap="round"/>
+  <path d="M182 360H340" stroke="#102136" stroke-opacity="0.25" stroke-width="10" stroke-linecap="round"/>
+  <rect x="514" y="244" width="280" height="160" rx="18" fill="#102136"/>
+  <path d="M560 300H744" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round"/>
+  <path d="M560 340H700" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-opacity="0.7"/>
+  <rect x="92" y="74" width="264" height="64" rx="14" fill="#102136" fill-opacity="0.88"/>
+  <text x="118" y="114" fill="#FFFFFF" font-size="34" font-family="Arial, Helvetica, sans-serif" font-weight="700">Field Maps</text>
+</svg>

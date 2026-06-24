@@ -34,6 +34,31 @@
   line-height: 1.7;
 }
 
+.partnerBlock {
+  display: grid;
+  gap: 12px;
+}
+
+.partnerBlock > span {
+  color: rgba(245, 251, 247, 0.58);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.partnerLink {
+  display: inline-block;
+  transition: opacity 180ms ease;
+}
+
+.partnerLogo {
+  display: block;
+  width: min(220px, 100%);
+  height: auto;
+  object-fit: contain;
+}
+
 .contact {
   display: grid;
   gap: 10px;
@@ -60,6 +85,10 @@
   .contact a:hover {
     color: #9ee7bf;
   }
+
+  .partnerLink:hover {
+    opacity: 0.85;
+  }
 }
 
 @media (max-width: 680px) {
@@ -73,4 +102,5 @@
   .contact {
     text-align: left;
   }
+
 }

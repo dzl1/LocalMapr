@@ -11,14 +11,20 @@ const appTypes = [
   {
     title: "Map tours",
     copy: "Turn landmarks, field notes, and photos into guided routes people can open from any link.",
+    image: "/map-tours-card.png",
+    imageAlt: "Map Tours preview showing route stops connected on a map",
   },
   {
     title: "Local guides",
     copy: "Publish neighborhood picks, event maps, visitor trails, and pop-up directories without rebuilding from scratch.",
+    image: "/local-guides-card.png",
+    imageAlt: "Local Guides preview showing places and guide notes",
   },
   {
     title: "Field apps",
     copy: "Collect lightweight place-based stories, observations, and project updates with simple map-first workflows.",
+    image: "/field-apps-card.png",
+    imageAlt: "Field Maps preview showing capture points and field entries",
   },
 ];
 
@@ -77,11 +83,11 @@ export function HomePage() {
         <div className={styles.heroContent}>
           <div className={styles.heroText}>
             <p className={styles.eyebrow}>Map-first app builder</p>
-            <h1 id="hero-title">LocalMapr</h1>
+            <h1 id="hero-title">Create</h1>
             <p className={styles.heroCopy}>
-              Create small, shareable webapps for map tours, local guides,
-              field stories, and place-based projects without starting from a
-              blank canvas.
+              LocalMapr (short for Local Mapper) helps you build small,
+              shareable web apps for mapping stories, map tours, local guides,
+              and place-based projects without starting from a blank canvas.
             </p>
             <div className={styles.heroActions}>
               <Link className={styles.primaryAction} to={workspaceHref}>
@@ -125,10 +131,8 @@ export function HomePage() {
         <div className={styles.templateGrid}>
           {appTypes.map((app) => (
             <article className={styles.templateCard} key={app.title}>
-              <div className={styles.cardMap} aria-hidden="true">
-                <span />
-                <span />
-                <span />
+              <div className={styles.cardMap}>
+                <img className={styles.cardImage} src={app.image} alt={app.imageAlt} />
               </div>
               <h3>{app.title}</h3>
               <p>{app.copy}</p>

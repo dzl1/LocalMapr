@@ -1,0 +1,30 @@
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="960" y2="540" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3FBF7"/>
+      <stop offset="1" stop-color="#E1F0F7"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="960" height="540" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#0E3C2B" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+  <rect width="960" height="540" rx="28" fill="url(#bg)"/>
+  <g opacity="0.35">
+    <path d="M80 120H880" stroke="#BFD7D0" stroke-width="2"/>
+    <path d="M80 210H880" stroke="#BFD7D0" stroke-width="2"/>
+    <path d="M80 300H880" stroke="#BFD7D0" stroke-width="2"/>
+    <path d="M80 390H880" stroke="#BFD7D0" stroke-width="2"/>
+    <path d="M160 70V470" stroke="#BFD7D0" stroke-width="2"/>
+    <path d="M320 70V470" stroke="#BFD7D0" stroke-width="2"/>
+    <path d="M480 70V470" stroke="#BFD7D0" stroke-width="2"/>
+    <path d="M640 70V470" stroke="#BFD7D0" stroke-width="2"/>
+    <path d="M800 70V470" stroke="#BFD7D0" stroke-width="2"/>
+  </g>
+  <path d="M150 380C220 320 280 320 350 350C440 390 530 220 640 250C720 270 770 210 820 150" stroke="#0D8F5A" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" filter="url(#shadow)"/>
+  <circle cx="150" cy="380" r="22" fill="#F36F5A" stroke="white" stroke-width="8"/>
+  <circle cx="350" cy="350" r="22" fill="#0D8F5A" stroke="white" stroke-width="8"/>
+  <circle cx="640" cy="250" r="22" fill="#F4C84A" stroke="white" stroke-width="8"/>
+  <circle cx="820" cy="150" r="22" fill="#0D8F5A" stroke="white" stroke-width="8"/>
+  <rect x="90" y="78" width="238" height="64" rx="14" fill="#102136" fill-opacity="0.88"/>
+  <text x="118" y="118" fill="#FFFFFF" font-size="34" font-family="Arial, Helvetica, sans-serif" font-weight="700">Map Tours</text>
+</svg>
