@@ -1,0 +1,289 @@
+.page {
+  min-height: 100vh;
+  padding: 24px;
+  color: #102136;
+  background: #f6faf7;
+  font-family: var(--font-sora), Arial, Helvetica, sans-serif;
+}
+
+.header,
+.hero,
+.metrics,
+.section {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 64px;
+}
+
+.brand {
+  display: inline-flex;
+  width: 296px;
+}
+
+.brandLogo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.actions a,
+.actions button,
+.setup a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.actions a {
+  color: #086242;
+  border: 1px solid rgba(13, 143, 90, 0.28);
+  background: #ffffff;
+}
+
+.actions button {
+  color: #344659;
+  border: 1px solid #d8e5df;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.hero {
+  padding: 54px 0 28px;
+}
+
+.hero p,
+.sectionHeader p {
+  color: #086242;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 760px;
+  margin-top: 10px;
+  font-size: clamp(42px, 7vw, 78px);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.hero span {
+  display: block;
+  margin-top: 14px;
+  color: #536172;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.metrics article,
+.section,
+.setup {
+  border: 1px solid #dfe7e6;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(16, 33, 54, 0.07);
+}
+
+.metrics article {
+  display: grid;
+  gap: 6px;
+  min-height: 116px;
+  align-content: center;
+  padding: 18px;
+}
+
+.metrics strong {
+  color: #086242;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1;
+}
+
+.metrics span {
+  color: #536172;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.section {
+  margin-top: 24px;
+  padding: 22px;
+}
+
+.sectionHeader {
+  margin-bottom: 18px;
+}
+
+.sectionHeader h2 {
+  margin-top: 6px;
+  font-size: 28px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid #e3ebe8;
+  border-radius: 8px;
+}
+
+.tableWrap table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.tableWrap th,
+.tableWrap td {
+  padding: 14px;
+  text-align: left;
+  border-bottom: 1px solid #e3ebe8;
+  font-size: 14px;
+  vertical-align: top;
+}
+
+.tableWrap th {
+  color: #344659;
+  background: #f7fbf8;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.tableWrap tr:last-child td {
+  border-bottom: 0;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.card,
+.eventItem {
+  border: 1px solid #e3ebe8;
+  border-radius: 8px;
+  background: #fbfdfb;
+}
+
+.card {
+  padding: 18px;
+}
+
+.card span {
+  color: #086242;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.card h3 {
+  margin-top: 8px;
+  font-size: 20px;
+}
+
+.card p {
+  margin-top: 8px;
+  color: #536172;
+  line-height: 1.55;
+}
+
+.card code,
+.eventItem code {
+  display: block;
+  max-width: 100%;
+  margin-top: 12px;
+  overflow: hidden;
+  color: #536172;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eventList {
+  display: grid;
+  gap: 10px;
+}
+
+.eventItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 0.5fr);
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+}
+
+.eventItem h3 {
+  font-size: 17px;
+}
+
+.eventItem p {
+  margin-top: 5px;
+  color: #536172;
+  font-size: 13px;
+}
+
+.setup {
+  width: min(720px, 100%);
+  margin: 90px auto;
+  padding: 32px;
+}
+
+.setup h1 {
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: 1.04;
+}
+
+.setup p {
+  margin-top: 16px;
+  color: #536172;
+  line-height: 1.7;
+}
+
+.setup a {
+  margin-top: 22px;
+  color: #ffffff;
+  background: #0d8f5a;
+}
+
+@media (max-width: 860px) {
+  .page {
+    padding: 18px 14px;
+  }
+
+  .header,
+  .actions,
+  .eventItem {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .metrics,
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .eventItem {
+    display: flex;
+  }
+}

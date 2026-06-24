@@ -1,0 +1,76 @@
+.footer {
+  color: #f5fbf7;
+  background:
+    linear-gradient(135deg, rgba(13, 143, 90, 0.18), rgba(16, 33, 54, 0)),
+    #102136;
+  font-family: var(--font-sora), Arial, Helvetica, sans-serif;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+.brandBlock {
+  max-width: 420px;
+}
+
+.logo {
+  display: block;
+  width: min(220px, 100%);
+  height: auto;
+  object-fit: contain;
+}
+
+.brandBlock p {
+  margin-top: 18px;
+  color: rgba(245, 251, 247, 0.72);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.contact {
+  display: grid;
+  gap: 10px;
+  font-style: normal;
+  text-align: right;
+}
+
+.contact span {
+  color: rgba(245, 251, 247, 0.58);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.contact a {
+  color: #ffffff;
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 750;
+  transition: color 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .contact a:hover {
+    color: #9ee7bf;
+  }
+}
+
+@media (max-width: 680px) {
+  .inner {
+    align-items: flex-start;
+    flex-direction: column;
+    width: min(1180px, calc(100% - 28px));
+    padding: 38px 0;
+  }
+
+  .contact {
+    text-align: left;
+  }
+}

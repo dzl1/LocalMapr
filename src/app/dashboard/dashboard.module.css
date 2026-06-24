@@ -1,0 +1,358 @@
+.page {
+  min-height: 100vh;
+  padding: 24px;
+  color: #102136;
+  background: #f6faf7;
+  font-family: var(--font-sora), Arial, Helvetica, sans-serif;
+}
+
+.header,
+.hero,
+.grid {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 58px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  width: 296px;
+}
+
+.brandLogo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ghostButton,
+.adminLink,
+.planPanel button,
+.createPanel button {
+  min-height: 42px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.adminLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  color: #086242;
+  border: 1px solid rgba(13, 143, 90, 0.28);
+  background: #ffffff;
+}
+
+.ghostButton {
+  padding: 0 14px;
+  color: #344659;
+  border: 1px solid #d8e5df;
+  background: #ffffff;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: end;
+  padding: 54px 0 28px;
+}
+
+.hero p,
+.createPanel > div p,
+.panelHeader p {
+  color: #086242;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin-top: 10px;
+  font-size: clamp(42px, 7vw, 78px);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.hero span {
+  display: block;
+  margin-top: 14px;
+  color: #536172;
+  font-size: 15px;
+}
+
+.planPanel,
+.createPanel,
+.appsPanel,
+.setup {
+  border: 1px solid #dfe7e6;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(16, 33, 54, 0.07);
+}
+
+.planPanel {
+  padding: 22px;
+}
+
+.planPanel > span {
+  color: #536172;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.planPanel strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+}
+
+.planPanel p {
+  margin-top: 10px;
+  color: #536172;
+  font-size: 14px;
+  line-height: 1.55;
+  text-transform: none;
+}
+
+.planPanel button,
+.createPanel button {
+  width: 100%;
+  margin-top: 18px;
+  color: #ffffff;
+  border: 0;
+  background: #0d8f5a;
+}
+
+.planPanel small {
+  display: block;
+  margin-top: 14px;
+  color: #9b6930;
+  line-height: 1.5;
+}
+
+.notice,
+.error {
+  width: min(1180px, 100%);
+  margin: 0 auto 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.notice {
+  color: #086242;
+  background: #dff4e7;
+}
+
+.error {
+  color: #8f2f22;
+  background: #ffe8e2;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.createPanel,
+.appsPanel {
+  padding: 22px;
+}
+
+.createPanel {
+  display: grid;
+  gap: 18px;
+}
+
+.createPanel h2,
+.panelHeader h2 {
+  margin-top: 6px;
+  font-size: 28px;
+}
+
+.createPanel label {
+  display: grid;
+  gap: 8px;
+  color: #344659;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.createPanel input,
+.createPanel select,
+.createPanel textarea {
+  width: 100%;
+  padding: 12px;
+  color: #102136;
+  border: 1px solid #d7e2df;
+  border-radius: 8px;
+  background: #ffffff;
+  font: inherit;
+}
+
+.createPanel input,
+.createPanel select {
+  min-height: 46px;
+}
+
+.createPanel textarea {
+  resize: vertical;
+}
+
+.createPanel input:focus,
+.createPanel select:focus,
+.createPanel textarea:focus {
+  border-color: #0d8f5a;
+  outline: 3px solid rgba(13, 143, 90, 0.14);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.appList {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.appItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #e3ebe8;
+  border-radius: 8px;
+  background: #fbfdfb;
+}
+
+.appItem span {
+  color: #086242;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.appItem h3 {
+  margin-top: 7px;
+  font-size: 21px;
+}
+
+.appItem p {
+  margin-top: 8px;
+  color: #536172;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.appMeta {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  color: #536172;
+  font-size: 13px;
+}
+
+.appMeta strong {
+  color: #102136;
+}
+
+.appMeta code {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  margin-top: 18px;
+  padding: 44px 20px;
+  text-align: center;
+  border: 1px dashed #cbdad5;
+  border-radius: 8px;
+  background: #fbfdfb;
+}
+
+.empty p {
+  margin-top: 10px;
+  color: #536172;
+}
+
+.setup {
+  width: min(720px, 100%);
+  margin: 90px auto;
+  padding: 32px;
+}
+
+.setup h1 {
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: 1.04;
+}
+
+.setup p {
+  margin-top: 16px;
+  color: #536172;
+  line-height: 1.7;
+}
+
+.setup a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  margin-top: 22px;
+  padding: 0 16px;
+  color: #ffffff;
+  background: #0d8f5a;
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+@media (max-width: 860px) {
+  .page {
+    padding: 18px 14px;
+  }
+
+  .hero,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    padding-top: 38px;
+  }
+
+  .appItem {
+    grid-template-columns: 1fr;
+  }
+
+  .appMeta {
+    justify-items: start;
+  }
+}
