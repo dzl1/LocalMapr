@@ -92,6 +92,24 @@
     transform 180ms ease;
 }
 
+.accountNav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.accountEmail {
+  max-width: 210px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .navCta,
 .primaryAction,
 .secondaryAction {
@@ -508,6 +526,14 @@
     min-height: 40px;
     padding: 0 12px;
     font-size: 12px;
+  }
+
+  .accountNav {
+    justify-self: end;
+  }
+
+  .accountEmail {
+    display: none;
   }
 
   .hero h1 {

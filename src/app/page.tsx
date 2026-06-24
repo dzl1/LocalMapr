@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import styles from "./page.module.css";
 
 const appTypes = [
@@ -29,7 +30,15 @@ const metrics = [
   ["0 code", "to launch a map app"],
 ];
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = supabase
+    ? await supabase.auth.getUser()
+    : { data: { user: null } };
+  const workspaceHref = user ? "/dashboard" : "/login";
+
   return (
     <main className={styles.page}>
       <section className={styles.hero} aria-labelledby="hero-title">
@@ -49,9 +58,14 @@ export default function Home() {
             <a href="#workflow">Workflow</a>
             <a href="#sharing">Sharing</a>
           </nav>
-          <Link className={styles.navCta} href="/login">
-            Log in
-          </Link>
+          <div className={styles.accountNav}>
+            {user?.email ? (
+              <span className={styles.accountEmail}>{user.email}</span>
+            ) : null}
+            <Link className={styles.navCta} href={workspaceHref}>
+              {user ? "Dashboard" : "Log in"}
+            </Link>
+          </div>
         </header>
 
         <div className={styles.heroContent}>
@@ -64,8 +78,8 @@ export default function Home() {
               blank canvas.
             </p>
             <div className={styles.heroActions}>
-              <Link className={styles.primaryAction} href="/login">
-                Start building
+              <Link className={styles.primaryAction} href={workspaceHref}>
+                {user ? "Open dashboard" : "Start building"}
               </Link>
               <a className={styles.secondaryAction} href="#templates">
                 Explore templates
@@ -157,8 +171,8 @@ export default function Home() {
       <section className={styles.finalCta} id="start">
         <p className={styles.eyebrow}>Early access</p>
         <h2>Bring your first place-based app to life.</h2>
-        <Link className={styles.primaryAction} href="/login">
-          Open workspace
+        <Link className={styles.primaryAction} href={workspaceHref}>
+          {user ? "Open dashboard" : "Open workspace"}
         </Link>
       </section>
     </main>

@@ -19,6 +19,12 @@ export function getSupabaseConfig() {
     return null;
   }
 
+  try {
+    new URL(url);
+  } catch {
+    return null;
+  }
+
   return { anonKey, url };
 }
 

@@ -2,22 +2,21 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./src/lib/database.types";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
-    return NextResponse.next({ request });
+    return NextResponse.next();
   }
 
-  // Avoid runtime crashes when malformed env values are provided.
   try {
     new URL(url);
   } catch {
-    return NextResponse.next({ request });
+    return NextResponse.next();
   }
 
-  let response = NextResponse.next({ request });
+  let response = NextResponse.next();
 
   try {
     const supabase = createServerClient<Database>(url, anonKey, {
@@ -26,11 +25,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
-
-          response = NextResponse.next({ request });
+          response = NextResponse.next();
 
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
@@ -41,9 +36,8 @@ export async function middleware(request: NextRequest) {
 
     await supabase.auth.getUser();
   } catch {
-    return NextResponse.next({ request });
+    return NextResponse.next();
   }
-
 
   return response;
 }
