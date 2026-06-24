@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LocalMapr
+
+LocalMapr is a Vite + React app for building small map-first webapps. The
+frontend runs as a client-side app, while Stripe billing endpoints live in
+Vercel serverless functions under `api/`.
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies and start the Vite dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:5173](http://localhost:5173) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`npm run dev` runs the Vite UI only. The billing and webhook routes under
+`api/` are Vercel serverless functions and are available in production, or
+through `vercel dev` when testing those routes locally.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment
 
-## Learn More
+Client-exposed values use Vite's `VITE_` prefix:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_APP_URL=
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Server-only values are used by the Vercel functions:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+SUPABASE_SERVICE_ROLE_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_PRO_PRICE_ID=
+STRIPE_WEBHOOK_SECRET=
+```
 
-## Deploy on Vercel
+For local development, put these in `.env.local`. Run the database schema in
+`supabase/schema.sql` before using the dashboard.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
+```
+
+## Deploy
+
+The Vercel config builds the Vite app and rewrites non-API routes to
+`index.html` so direct visits to `/dashboard`, `/admin`, and `/login` work in
+production.

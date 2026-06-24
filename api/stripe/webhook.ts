@@ -1,8 +1,13 @@
 import Stripe from "stripe";
-import { NextResponse, type NextRequest } from "next/server";
-import type { Json } from "@/lib/database.types";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createStripeClient } from "@/lib/stripe";
+import type { Json } from "../../src/lib/database.types";
+import { createSupabaseAdminClient } from "../../src/lib/supabase/admin";
+import { createStripeClient } from "../../src/lib/stripe";
+import {
+  readRawBody,
+  sendJson,
+  type ApiRequest,
+  type ApiResponse,
+} from "../_utils";
 
 function objectId(
   value:
@@ -43,6 +48,23 @@ function stringId(value: unknown) {
   return null;
 }
 
+async function userIdForCustomer(customerId: string) {
+  const supabase = createSupabaseAdminClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data: profileResult } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle();
+  const data = profileResult as { id: string } | null;
+
+  return data?.id ?? null;
+}
+
 async function recordBillingEvent(event: Stripe.Event) {
   const supabase = createSupabaseAdminClient();
 
@@ -75,23 +97,6 @@ async function recordBillingEvent(event: Stripe.Event) {
     },
     { onConflict: "stripe_event_id" },
   );
-}
-
-async function userIdForCustomer(customerId: string) {
-  const supabase = createSupabaseAdminClient();
-
-  if (!supabase) {
-    return null;
-  }
-
-  const { data: profileResult } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("stripe_customer_id", customerId)
-    .maybeSingle();
-  const data = profileResult as { id: string } | null;
-
-  return data?.id ?? null;
 }
 
 async function syncSubscription(subscription: Stripe.Subscription) {
@@ -131,12 +136,15 @@ async function syncSubscription(subscription: Stripe.Subscription) {
     { onConflict: "stripe_subscription_id" },
   );
 
-  await supabase.from("profiles").update({
-    current_period_end: currentPeriodEnd,
-    stripe_customer_id: customerId,
-    subscription_price_id: priceId,
-    subscription_status: subscription.status,
-  }).eq("id", userId);
+  await supabase
+    .from("profiles")
+    .update({
+      current_period_end: currentPeriodEnd,
+      stripe_customer_id: customerId,
+      subscription_price_id: priceId,
+      subscription_status: subscription.status,
+    })
+    .eq("id", userId);
 }
 
 async function syncCheckoutSession(session: Stripe.Checkout.Session) {
@@ -151,9 +159,12 @@ async function syncCheckoutSession(session: Stripe.Checkout.Session) {
   const customerId = objectId(session.customer);
 
   if (userId && customerId) {
-    await supabase.from("profiles").update({
-      stripe_customer_id: customerId,
-    }).eq("id", userId);
+    await supabase
+      .from("profiles")
+      .update({
+        stripe_customer_id: customerId,
+      })
+      .eq("id", userId);
   }
 
   if (typeof session.subscription === "string") {
@@ -164,34 +175,42 @@ async function syncCheckoutSession(session: Stripe.Checkout.Session) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export default async function handler(
+  request: ApiRequest,
+  response: ApiResponse,
+) {
+  if (request.method !== "POST") {
+    sendJson(response, 405, { error: "Method not allowed." });
+    return;
+  }
+
   const stripe = createStripeClient();
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!stripe || !webhookSecret) {
-    return NextResponse.json(
-      { error: "Stripe webhook is not configured." },
-      { status: 500 },
-    );
+    sendJson(response, 500, { error: "Stripe webhook is not configured." });
+    return;
   }
 
-  const signature = request.headers.get("stripe-signature");
+  const signatureHeader = request.headers["stripe-signature"];
+  const signature = Array.isArray(signatureHeader)
+    ? signatureHeader[0]
+    : signatureHeader;
 
   if (!signature) {
-    return NextResponse.json(
-      { error: "Missing Stripe signature." },
-      { status: 400 },
-    );
+    sendJson(response, 400, { error: "Missing Stripe signature." });
+    return;
   }
 
   let event: Stripe.Event;
 
   try {
-    const body = await request.text();
+    const body = await readRawBody(request);
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid webhook.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    sendJson(response, 400, { error: message });
+    return;
   }
 
   switch (event.type) {
@@ -209,5 +228,5 @@ export async function POST(request: NextRequest) {
 
   await recordBillingEvent(event);
 
-  return NextResponse.json({ received: true });
+  sendJson(response, 200, { received: true });
 }

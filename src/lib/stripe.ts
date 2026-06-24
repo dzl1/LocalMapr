@@ -8,5 +8,7 @@ export function createStripeClient() {
     return null;
   }
 
-  return new Stripe(config.secretKey);
+  return new Stripe(config.secretKey, {
+    apiVersion: "2026-05-27.dahlia",
+  });
 }

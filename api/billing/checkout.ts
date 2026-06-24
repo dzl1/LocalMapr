@@ -1,32 +1,42 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { getAppBaseUrl, getStripeConfig } from "@/lib/config";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { createStripeClient } from "@/lib/stripe";
+import { getStripeConfig } from "../../src/lib/config";
+import { createStripeClient } from "../../src/lib/stripe";
+import {
+  getAdminClient,
+  getAuthenticatedUser,
+  getRequestOrigin,
+  sendJson,
+  type ApiRequest,
+  type ApiResponse,
+} from "../_utils";
 
-export async function POST(request: NextRequest) {
-  const baseUrl = getAppBaseUrl(request.url);
-  const supabase = await createServerSupabaseClient();
+export default async function handler(
+  request: ApiRequest,
+  response: ApiResponse,
+) {
+  if (request.method !== "POST") {
+    sendJson(response, 405, { error: "Method not allowed." });
+    return;
+  }
+
+  const baseUrl = getRequestOrigin(request);
+  const { user, error: authError } = await getAuthenticatedUser(request);
+  const { supabase, error: supabaseError } = getAdminClient();
   const stripe = createStripeClient();
   const stripeConfig = getStripeConfig();
 
-  if (!supabase) {
-    return NextResponse.redirect(
-      new URL("/dashboard?error=supabase-not-configured", baseUrl),
-    );
+  if (authError || !user) {
+    sendJson(response, 401, { error: authError });
+    return;
+  }
+
+  if (supabaseError || !supabase) {
+    sendJson(response, 500, { error: supabaseError });
+    return;
   }
 
   if (!stripe || !stripeConfig) {
-    return NextResponse.redirect(
-      new URL("/dashboard?error=stripe-not-configured", baseUrl),
-    );
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.redirect(new URL("/login?next=/dashboard", baseUrl));
+    sendJson(response, 500, { error: "Stripe is not configured." });
+    return;
   }
 
   const { data: profileResult } = await supabase
@@ -78,10 +88,9 @@ export async function POST(request: NextRequest) {
   });
 
   if (!session.url) {
-    return NextResponse.redirect(
-      new URL("/dashboard?error=checkout-session-missing-url", baseUrl),
-    );
+    sendJson(response, 500, { error: "Checkout session is missing a URL." });
+    return;
   }
 
-  return NextResponse.redirect(session.url, 303);
+  sendJson(response, 200, { url: session.url });
 }

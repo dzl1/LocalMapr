@@ -1,7 +1,11 @@
-import Image from "next/image";
-import Link from "next/link";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import styles from "./page.module.css";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import type { User } from "@supabase/supabase-js";
+import {
+  createBrowserSupabaseClient,
+  getSupabaseBrowserConfig,
+} from "@/lib/supabase/client";
+import styles from "@/app/page.module.css";
 
 const appTypes = [
   {
@@ -30,27 +34,29 @@ const metrics = [
   ["0 code", "to launch a map app"],
 ];
 
-export default async function Home() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = supabase
-    ? await supabase.auth.getUser()
-    : { data: { user: null } };
+export function HomePage() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (!getSupabaseBrowserConfig()) {
+      return;
+    }
+
+    const supabase = createBrowserSupabaseClient();
+    void supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
+
   const workspaceHref = user ? "/dashboard" : "/login";
 
   return (
     <main className={styles.page}>
       <section className={styles.hero} aria-labelledby="hero-title">
         <header className={styles.nav}>
-          <Link className={styles.brand} href="/" aria-label="LocalMapr home">
-            <Image
+          <Link className={styles.brand} to="/" aria-label="LocalMapr home">
+            <img
               className={styles.brandLogo}
               src="/brand/logo_dark.png"
               alt="LocalMapr"
-              width={376}
-              height={160}
-              priority
             />
           </Link>
           <nav className={styles.navLinks} aria-label="Primary navigation">
@@ -62,7 +68,7 @@ export default async function Home() {
             {user?.email ? (
               <span className={styles.accountEmail}>{user.email}</span>
             ) : null}
-            <Link className={styles.navCta} href={workspaceHref}>
+            <Link className={styles.navCta} to={workspaceHref}>
               {user ? "Dashboard" : "Log in"}
             </Link>
           </div>
@@ -78,7 +84,7 @@ export default async function Home() {
               blank canvas.
             </p>
             <div className={styles.heroActions}>
-              <Link className={styles.primaryAction} href={workspaceHref}>
+              <Link className={styles.primaryAction} to={workspaceHref}>
                 {user ? "Open dashboard" : "Start building"}
               </Link>
               <a className={styles.secondaryAction} href="#templates">
@@ -88,14 +94,10 @@ export default async function Home() {
           </div>
 
           <div className={styles.heroVisual}>
-            <Image
+            <img
               className={styles.heroImage}
               src="/localmapr-hero.png"
               alt="LocalMapr interface showing a map tour builder with numbered stops and publish controls"
-              width={1586}
-              height={992}
-              priority
-              sizes="(max-width: 920px) 100vw, 58vw"
             />
           </div>
         </div>
@@ -171,7 +173,7 @@ export default async function Home() {
       <section className={styles.finalCta} id="start">
         <p className={styles.eyebrow}>Early access</p>
         <h2>Bring your first place-based app to life.</h2>
-        <Link className={styles.primaryAction} href={workspaceHref}>
+        <Link className={styles.primaryAction} to={workspaceHref}>
           {user ? "Open dashboard" : "Open workspace"}
         </Link>
       </section>

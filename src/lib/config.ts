@@ -1,6 +1,8 @@
 export function getAppBaseUrl(requestUrl?: string) {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const configuredUrl = process.env.VITE_APP_URL;
+
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/$/, "");
   }
 
   if (requestUrl) {
@@ -12,8 +14,8 @@ export function getAppBaseUrl(requestUrl?: string) {
 }
 
 export function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = process.env.VITE_SUPABASE_URL;
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
     return null;
