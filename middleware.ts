@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { getSupabaseConfig } from "@/lib/config";
-import type { Database } from "@/lib/database.types";
+import { getSupabaseConfig } from "./src/lib/config";
+import type { Database } from "./src/lib/database.types";
 
 export async function middleware(request: NextRequest) {
   const config = getSupabaseConfig();
