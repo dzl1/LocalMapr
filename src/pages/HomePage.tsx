@@ -13,6 +13,7 @@ const appTypes = [
     copy: "Turn landmarks, field notes, and photos into guided routes people can open from any link.",
     image: "/map-tours-card.png",
     imageAlt: "Map Tours preview showing route stops connected on a map",
+    href: "/map-tour",
   },
   {
     title: "Local guides",
@@ -130,13 +131,23 @@ export function HomePage() {
 
         <div className={styles.templateGrid}>
           {appTypes.map((app) => (
-            <article className={styles.templateCard} key={app.title}>
-              <div className={styles.cardMap}>
-                <img className={styles.cardImage} src={app.image} alt={app.imageAlt} />
-              </div>
-              <h3>{app.title}</h3>
-              <p>{app.copy}</p>
-            </article>
+            app.href ? (
+              <Link className={`${styles.templateCard} ${styles.templateCardLink}`} key={app.title} to={app.href}>
+                <div className={styles.cardMap}>
+                  <img className={styles.cardImage} src={app.image} alt={app.imageAlt} />
+                </div>
+                <h3>{app.title}</h3>
+                <p>{app.copy}</p>
+              </Link>
+            ) : (
+              <article className={styles.templateCard} key={app.title}>
+                <div className={styles.cardMap}>
+                  <img className={styles.cardImage} src={app.image} alt={app.imageAlt} />
+                </div>
+                <h3>{app.title}</h3>
+                <p>{app.copy}</p>
+              </article>
+            )
           ))}
         </div>
       </section>

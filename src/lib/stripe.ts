@@ -1,14 +1,14 @@
 import Stripe from "stripe";
-import { getStripeConfig } from "@/lib/config";
+import { getStripeSecretKey } from "@/lib/config";
 
 export function createStripeClient() {
-  const config = getStripeConfig();
+  const secretKey = getStripeSecretKey();
 
-  if (!config) {
+  if (!secretKey) {
     return null;
   }
 
-  return new Stripe(config.secretKey, {
+  return new Stripe(secretKey, {
     apiVersion: "2026-05-27.dahlia",
   });
 }

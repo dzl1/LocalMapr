@@ -294,6 +294,14 @@
   background: linear-gradient(180deg, var(--card-tint) 0%, #ffffff 52%);
 }
 
+.templateCardLink {
+  display: block;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
 .templateCard:nth-child(2) {
   --card-tint: #f2f8fb;
   --card-line: rgba(42, 129, 151, 0.2);
@@ -437,6 +445,12 @@
     border-color: rgba(13, 143, 90, 0.42);
     background: #ffffff;
     transform: translateY(-1px);
+  }
+
+  .templateCardLink:hover {
+    transform: translateY(-2px);
+    border-color: rgba(13, 143, 90, 0.42);
+    box-shadow: 0 10px 24px rgba(16, 33, 54, 0.08);
   }
 }
 

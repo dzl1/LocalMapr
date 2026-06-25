@@ -41,8 +41,12 @@ export function getSupabaseAdminConfig() {
   return { ...publicConfig, serviceRoleKey };
 }
 
+export function getStripeSecretKey() {
+  return process.env.STRIPE_SECRET_KEY ?? null;
+}
+
 export function getStripeConfig() {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const secretKey = getStripeSecretKey();
   const priceId = process.env.STRIPE_PRO_PRICE_ID;
 
   if (!secretKey || !priceId) {
@@ -50,4 +54,16 @@ export function getStripeConfig() {
   }
 
   return { priceId, secretKey };
+}
+
+export function getMapTourStripeConfig() {
+  const secretKey = getStripeSecretKey();
+  const tourCreditPriceId = process.env.STRIPE_MAP_TOUR_CREDIT_PRICE_ID;
+  const pointUpgradePriceId = process.env.STRIPE_MAP_POINT_UPGRADE_PRICE_ID;
+
+  if (!secretKey || !tourCreditPriceId || !pointUpgradePriceId) {
+    return null;
+  }
+
+  return { pointUpgradePriceId, secretKey, tourCreditPriceId };
 }

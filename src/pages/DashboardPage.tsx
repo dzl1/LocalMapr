@@ -9,7 +9,11 @@ import {
 import styles from "@/app/dashboard/dashboard.module.css";
 
 type MapApp = Database["public"]["Tables"]["map_apps"]["Row"];
+type MapTourPurchase =
+  Database["public"]["Tables"]["map_tour_purchases"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+
+const freeMapTourLimit = 1;
 
 const appTypeLabels: Record<string, string> = {
   field_app: "Field app",
@@ -37,7 +41,7 @@ function slugify(value: string) {
     .slice(0, 52);
 }
 
-async function startBillingFlow(path: string) {
+async function startBillingFlow(path: string, body?: Record<string, unknown>) {
   const supabase = createBrowserSupabaseClient();
   const {
     data: { session },
@@ -51,7 +55,9 @@ async function startBillingFlow(path: string) {
     method: "POST",
     headers: {
       Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
     },
+    body: body ? JSON.stringify(body) : undefined,
   });
   const payload = (await response.json()) as { error?: string; url?: string };
 
@@ -68,6 +74,8 @@ export function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [apps, setApps] = useState<MapApp[]>([]);
+  const [purchases, setPurchases] = useState<MapTourPurchase[]>([]);
+  const [createType, setCreateType] = useState("map_tour");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -94,7 +102,12 @@ export function DashboardPage() {
 
     setUser(currentUser);
 
-    const [{ data: profileData }, { data: appsData }, { data: adminRecord }] =
+    const [
+      { data: profileData },
+      { data: appsData },
+      { data: purchasesData },
+      { data: adminRecord },
+    ] =
       await Promise.all([
         supabase
           .from("profiles")
@@ -107,6 +120,11 @@ export function DashboardPage() {
           .eq("owner_id", currentUser.id)
           .order("updated_at", { ascending: false }),
         supabase
+          .from("map_tour_purchases")
+          .select("*")
+          .eq("user_id", currentUser.id)
+          .order("created_at", { ascending: false }),
+        supabase
           .from("super_admins")
           .select("id")
           .eq("email", currentUser.email?.toLowerCase() ?? "")
@@ -116,6 +134,7 @@ export function DashboardPage() {
 
     setProfile(profileData);
     setApps(appsData ?? []);
+    setPurchases(purchasesData ?? []);
     setIsAdmin(Boolean(adminRecord));
     setLoading(false);
   }
@@ -142,7 +161,7 @@ export function DashboardPage() {
     const formData = new FormData(event.currentTarget);
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
-    const appType = String(formData.get("app_type") ?? "map_tour");
+    const appType = String(formData.get("app_type") ?? createType);
 
     if (!user) {
       navigate("/login?next=/dashboard");
@@ -155,14 +174,36 @@ export function DashboardPage() {
       return;
     }
 
+    const mapTourApps = apps.filter((app) => app.app_type === "map_tour");
+    const unusedTourCredits = purchases.filter(
+      (purchase) => purchase.credit_type === "tour" && !purchase.used_at,
+    );
+
+    if (
+      appType === "map_tour" &&
+      !isAdmin &&
+      mapTourApps.length >= freeMapTourLimit &&
+      unusedTourCredits.length < 1
+    ) {
+      setError(
+        "Your free Map Tour is already used. Buy a tour credit to create another.",
+      );
+      setCreating(false);
+      return;
+    }
+
     const slug = `${slugify(title)}-${crypto.randomUUID().slice(0, 8)}`;
-    const { error: insertError } = await supabase.from("map_apps").insert({
-      app_type: appType,
-      description: description || null,
-      owner_id: user.id,
-      slug,
-      title,
-    });
+    const { data: insertedApp, error: insertError } = await supabase
+      .from("map_apps")
+      .insert({
+        app_type: appType,
+        description: description || null,
+        owner_id: user.id,
+        slug,
+        title,
+      })
+      .select("id")
+      .single();
 
     if (insertError) {
       setError(insertError.message);
@@ -170,7 +211,30 @@ export function DashboardPage() {
       return;
     }
 
+    if (
+      insertedApp &&
+      appType === "map_tour" &&
+      !isAdmin &&
+      mapTourApps.length >= freeMapTourLimit &&
+      unusedTourCredits[0]
+    ) {
+      const { error: consumeError } = await supabase
+        .from("map_tour_purchases")
+        .update({
+          used_at: new Date().toISOString(),
+          used_for_app_id: insertedApp.id,
+        })
+        .eq("id", unusedTourCredits[0].id)
+        .eq("user_id", user.id)
+        .is("used_at", null);
+
+      if (consumeError) {
+        setError(consumeError.message);
+      }
+    }
+
     event.currentTarget.reset();
+    setCreateType("map_tour");
     setMessage("Draft map app created.");
     setCreating(false);
     await loadDashboard();
@@ -193,6 +257,24 @@ export function DashboardPage() {
         billingError instanceof Error
           ? billingError.message
           : "Billing could not be started.",
+      );
+      setBillingPending(false);
+    }
+  }
+
+  async function handleMapTourCheckout(creditType: "tour" | "points") {
+    setBillingPending(true);
+    setError("");
+
+    try {
+      await startBillingFlow("/api/billing/map-tour-checkout", {
+        creditType,
+      });
+    } catch (checkoutError) {
+      setError(
+        checkoutError instanceof Error
+          ? checkoutError.message
+          : "Map Tour checkout could not be started.",
       );
       setBillingPending(false);
     }
@@ -229,6 +311,10 @@ export function DashboardPage() {
     planStatus === "active" ||
     planStatus === "trialing" ||
     planStatus === "past_due";
+  const mapTourApps = apps.filter((app) => app.app_type === "map_tour");
+  const unusedTourCredits = purchases.filter(
+    (purchase) => purchase.credit_type === "tour" && !purchase.used_at,
+  ).length;
 
   return (
     <main className={styles.page}>
@@ -285,6 +371,9 @@ export function DashboardPage() {
                 ? "Manage billing"
                 : "Upgrade"}
           </button>
+          <small>
+            Map Tour credits: {unusedTourCredits} available. Free Map Tours: {Math.max(0, freeMapTourLimit - mapTourApps.length)} remaining.
+          </small>
         </div>
       </section>
 
@@ -308,7 +397,11 @@ export function DashboardPage() {
           </label>
           <label>
             Type
-            <select defaultValue="map_tour" name="app_type">
+            <select
+              value={createType}
+              name="app_type"
+              onChange={(event) => setCreateType(event.target.value)}
+            >
               <option value="map_tour">Map tour</option>
               <option value="local_guide">Local guide</option>
               <option value="field_app">Field app</option>
@@ -325,6 +418,19 @@ export function DashboardPage() {
           <button disabled={creating} type="submit">
             {creating ? "Creating..." : "Create draft"}
           </button>
+          {createType === "map_tour" &&
+          !isAdmin &&
+          mapTourApps.length >= freeMapTourLimit &&
+          unusedTourCredits < 1 ? (
+            <button
+              type="button"
+              disabled={billingPending}
+              className={styles.secondaryButton}
+              onClick={() => handleMapTourCheckout("tour")}
+            >
+              {billingPending ? "Opening..." : "Buy Map Tour credit"}
+            </button>
+          ) : null}
         </form>
 
         <section className={styles.appsPanel}>
@@ -343,6 +449,16 @@ export function DashboardPage() {
                     <span>{appTypeLabels[app.app_type] ?? app.app_type}</span>
                     <h3>{app.title}</h3>
                     <p>{app.description || "No description yet."}</p>
+                    {app.app_type === "map_tour" ? (
+                      <div className={styles.appLinks}>
+                        <Link to={`/map-tour/${app.id}`}>Open editor</Link>
+                        {app.status === "published" ? (
+                          <Link to={`/tour/${app.slug}`} target="_blank" rel="noreferrer">
+                            Open public
+                          </Link>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                   <div className={styles.appMeta}>
                     <strong>{formatStatus(app.status)}</strong>

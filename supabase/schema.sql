@@ -26,6 +26,21 @@ create table if not exists public.map_apps (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.map_tour_purchases (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  map_app_id uuid references public.map_apps(id) on delete set null,
+  credit_type text not null,
+  stripe_checkout_session_id text not null unique,
+  stripe_payment_intent_id text,
+  status text not null default 'completed',
+  used_at timestamptz,
+  used_for_app_id uuid references public.map_apps(id) on delete set null,
+  created_at timestamptz not null default now(),
+  constraint map_tour_purchases_credit_type_check
+    check (credit_type in ('tour', 'points'))
+);
+
 create table if not exists public.subscriptions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -134,6 +149,7 @@ for each row execute function public.handle_new_user();
 
 alter table public.profiles enable row level security;
 alter table public.map_apps enable row level security;
+alter table public.map_tour_purchases enable row level security;
 alter table public.subscriptions enable row level security;
 alter table public.super_admins enable row level security;
 alter table public.billing_events enable row level security;
@@ -185,6 +201,16 @@ create policy "Users can delete their own map apps"
 on public.map_apps for delete
 using (auth.uid() = owner_id);
 
+drop policy if exists "Users can read their own map tour purchases" on public.map_tour_purchases;
+create policy "Users can read their own map tour purchases"
+on public.map_tour_purchases for select
+using (auth.uid() = user_id);
+
+drop policy if exists "Super admins can read all map tour purchases" on public.map_tour_purchases;
+create policy "Super admins can read all map tour purchases"
+on public.map_tour_purchases for select
+using (public.is_super_admin());
+
 drop policy if exists "Users can read their own subscriptions" on public.subscriptions;
 create policy "Users can read their own subscriptions"
 on public.subscriptions for select
@@ -207,6 +233,15 @@ using (public.is_super_admin());
 
 create index if not exists map_apps_owner_updated_idx
 on public.map_apps (owner_id, updated_at desc);
+
+create index if not exists map_tour_purchases_user_created_idx
+on public.map_tour_purchases (user_id, created_at desc);
+
+create index if not exists map_tour_purchases_user_credit_used_idx
+on public.map_tour_purchases (user_id, credit_type, used_at);
+
+create index if not exists map_tour_purchases_map_app_idx
+on public.map_tour_purchases (map_app_id);
 
 create index if not exists subscriptions_user_idx
 on public.subscriptions (user_id);

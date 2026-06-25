@@ -143,6 +143,12 @@
   background: #0d8f5a;
 }
 
+.secondaryButton {
+  color: #204d70 !important;
+  border: 1px solid #c9dbe7 !important;
+  background: #f4f9fd !important;
+}
+
 .planPanel small {
   display: block;
   margin-top: 14px;
@@ -269,6 +275,27 @@
   color: #536172;
   font-size: 14px;
   line-height: 1.55;
+}
+
+.appLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.appLinks a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 10px;
+  color: #204d70;
+  border: 1px solid #c9dbe7;
+  border-radius: 8px;
+  background: #f4f9fd;
+  font-size: 12px;
+  font-weight: 750;
 }
 
 .appMeta {

@@ -84,6 +84,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      map_tour_purchases: {
+        Row: {
+          created_at: string;
+          credit_type: string;
+          id: string;
+          map_app_id: string | null;
+          status: string;
+          stripe_checkout_session_id: string;
+          stripe_payment_intent_id: string | null;
+          used_at: string | null;
+          used_for_app_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          credit_type: string;
+          id?: string;
+          map_app_id?: string | null;
+          status?: string;
+          stripe_checkout_session_id: string;
+          stripe_payment_intent_id?: string | null;
+          used_at?: string | null;
+          used_for_app_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          credit_type?: string;
+          id?: string;
+          map_app_id?: string | null;
+          status?: string;
+          stripe_checkout_session_id?: string;
+          stripe_payment_intent_id?: string | null;
+          used_at?: string | null;
+          used_for_app_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           created_at: string;
