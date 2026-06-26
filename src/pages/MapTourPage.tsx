@@ -357,6 +357,7 @@ export function MapTourPage() {
   const [cards, setCards] = useState<TourCard[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isRailCollapsed, setIsRailCollapsed] = useState(false);
   const [isTourDetailsCollapsed, setIsTourDetailsCollapsed] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [viewport, setViewport] = useState<{ center: [number, number]; zoom: number }>({
@@ -859,9 +860,12 @@ export function MapTourPage() {
     });
   }
 
-  async function persistChanges(silent = false) {
+  async function persistChanges(
+    silent = false,
+    overrides: { isPublished?: boolean } = {},
+  ) {
     if (!app || !user) {
-      return;
+      return false;
     }
 
     setSaveState("saving");
@@ -875,6 +879,7 @@ export function MapTourPage() {
       center: viewport.center,
       zoom: viewport.zoom,
     };
+    const nextIsPublished = overrides.isPublished ?? isPublished;
 
     const supabase = createBrowserSupabaseClient();
     const { error: updateError } = await supabase
@@ -882,8 +887,8 @@ export function MapTourPage() {
       .update({
         title: title.trim() || "Untitled map tour",
         description: description.trim() || null,
-        status: isPublished ? "published" : "draft",
-        published_at: isPublished ? new Date().toISOString() : null,
+        status: nextIsPublished ? "published" : "draft",
+        published_at: nextIsPublished ? new Date().toISOString() : null,
         config: serializeConfig(config),
       })
       .eq("id", app.id)
@@ -892,13 +897,36 @@ export function MapTourPage() {
     if (updateError) {
       setSaveState("error");
       setError(updateError.message);
-      return;
+      return false;
     }
 
+    setApp((current) =>
+      current
+        ? {
+            ...current,
+            description: description.trim() || null,
+            published_at: nextIsPublished ? new Date().toISOString() : null,
+            status: nextIsPublished ? "published" : "draft",
+            title: title.trim() || "Untitled map tour",
+          }
+        : current,
+    );
     setSaveState("saved");
     setDirty(false);
     if (!silent) {
       setMessage("Map tour changes saved.");
+    }
+    return true;
+  }
+
+  async function handlePublishedChange(nextIsPublished: boolean) {
+    const previousValue = isPublished;
+    setIsPublished(nextIsPublished);
+    setDirty(true);
+
+    const saved = await persistChanges(true, { isPublished: nextIsPublished });
+    if (!saved) {
+      setIsPublished(previousValue);
     }
   }
 
@@ -1227,7 +1255,7 @@ export function MapTourPage() {
         <FitSelectedCard card={selectedCard} />
 
         {cards.map((card, index) => {
-          const pinPopupText = card.hoverText.trim() || card.body.trim() || card.title;
+          const pinPopupText = card.hoverText.trim() || card.title;
 
           return (
             <Marker
@@ -1270,25 +1298,44 @@ export function MapTourPage() {
         })}
       </MapContainer>
 
-      <aside className={styles.rail}>
-        <Link className={styles.railLogoLink} to="/" aria-label="LocalMapr home">
-          <img
-            className={styles.railLogo}
-            src="/brand/logo_dark.png"
-            alt="LocalMapr"
+      <aside className={cx(styles.rail, isRailCollapsed && styles.railCollapsed)}>
+        <button
+          type="button"
+          className={styles.railCollapseButton}
+          aria-label={isRailCollapsed ? "Open side panel" : "Collapse side panel"}
+          aria-expanded={!isRailCollapsed}
+          onClick={() => setIsRailCollapsed((current) => !current)}
+          title={isRailCollapsed ? "Open side panel" : "Collapse side panel"}
+        >
+          <span
+            className={cx(
+              styles.railCollapseIcon,
+              isRailCollapsed && styles.railCollapseIconCollapsed,
+            )}
+            aria-hidden="true"
           />
-        </Link>
+        </button>
 
-        {isPublic ? (
-          <>
-            <div className={styles.railHeader}>
-              <h1 className={styles.publicTitle}>{title}</h1>
-            </div>
+        {!isRailCollapsed ? (
+          <div className={styles.railContent}>
+            <Link className={styles.railLogoLink} to="/" aria-label="LocalMapr home">
+              <img
+                className={styles.railLogo}
+                src="/brand/logo_dark.png"
+                alt="LocalMapr"
+              />
+            </Link>
 
-            {description ? <p className={styles.publicDescription}>{description}</p> : null}
-          </>
-        ) : (
-          <section className={styles.detailsCard}>
+            {isPublic ? (
+              <>
+                <div className={styles.railHeader}>
+                  <h1 className={styles.publicTitle}>{title}</h1>
+                </div>
+
+                {description ? <p className={styles.publicDescription}>{description}</p> : null}
+              </>
+            ) : (
+              <section className={styles.detailsCard}>
             <button
               type="button"
               className={styles.detailsToggle}
@@ -1353,14 +1400,13 @@ export function MapTourPage() {
                     type="checkbox"
                     checked={isPublished}
                     onChange={(event) => {
-                      setIsPublished(event.target.checked);
-                      setDirty(true);
+                      void handlePublishedChange(event.target.checked);
                     }}
                   />
                   <span>Published</span>
                 </label>
 
-                {isPublished && app?.slug ? (
+                {isPublished && app?.status === "published" && app?.slug ? (
                   <>
                     <label>
                       <span>Share URL</span>
@@ -1394,71 +1440,73 @@ export function MapTourPage() {
               </section>
               </div>
             ) : null}
-          </section>
-        )}
+              </section>
+            )}
 
-        {message ? <p className={styles.alert}>{message}</p> : null}
-        {error ? <p className={cx(styles.alert, styles.alertError)}>{error}</p> : null}
+            {message ? <p className={styles.alert}>{message}</p> : null}
+            {error ? <p className={cx(styles.alert, styles.alertError)}>{error}</p> : null}
 
-        <div
-          className={styles.cardList}
-          ref={tourCardListRef}
-          onScroll={handleTourCardListScroll}
-        >
-          {!cards.length ? <div className={styles.empty}>No tour points yet.</div> : null}
-          {cards.map((card, index) => (
-            <button
-              type="button"
-              key={card.id}
-              className={cx(
-                styles.card,
-                card.id === selectedCardId && styles.active,
-                getRenderableImageUrls(card).length > 0 && styles.hasImage,
-              )}
-              onClick={() => setSelectedCardId(card.id)}
-              ref={(element) => {
-                if (element) {
-                  tourCardRefs.current.set(card.id, element);
-                } else {
-                  tourCardRefs.current.delete(card.id);
-                }
-              }}
+            <div
+              className={styles.cardList}
+              ref={tourCardListRef}
+              onScroll={handleTourCardListScroll}
             >
-              <TourCardImage card={card} />
-              <span className={styles.badge} style={{ background: card.color }}>{index + 1}</span>
-              <span className={styles.cardText}>
-                <strong>{card.title}</strong>
-                <span>{card.body || (isPublic ? "Draft point" : "No story text yet.")}</span>
-              </span>
-            </button>
-          ))}
-        </div>
+              {!cards.length ? <div className={styles.empty}>No tour points yet.</div> : null}
+              {cards.map((card, index) => (
+                <button
+                  type="button"
+                  key={card.id}
+                  className={cx(
+                    styles.card,
+                    card.id === selectedCardId && styles.active,
+                    getRenderableImageUrls(card).length > 0 && styles.hasImage,
+                  )}
+                  onClick={() => setSelectedCardId(card.id)}
+                  ref={(element) => {
+                    if (element) {
+                      tourCardRefs.current.set(card.id, element);
+                    } else {
+                      tourCardRefs.current.delete(card.id);
+                    }
+                  }}
+                >
+                  <TourCardImage card={card} />
+                  <span className={styles.badge} style={{ background: card.color }}>{index + 1}</span>
+                  <span className={styles.cardText}>
+                    <strong>{card.title}</strong>
+                    <span>{card.body || (isPublic ? "Draft point" : "No story text yet.")}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
 
-        {!isPublic ? (
-          <div className={styles.railFooter}>
-            <button
-              type="button"
-              className={cx(styles.addPointButton, isAdding && styles.addPointButtonActive)}
-              onClick={addCardFromButton}
-              disabled={!isAdmin && cards.length >= paidPointLimit}
-              aria-label="Add point"
-              title="Add point"
-            >
-              +
-            </button>
-            <button
-              type="button"
-              className={cx(styles.button, styles.buttonQuiet)}
-              onClick={() => setIsAdding((current) => !current)}
-            >
-              {isAdding ? "Click map" : "Place on map"}
-            </button>
-            <button type="button" className={cx(styles.button, styles.buttonDanger)} onClick={() => void deleteTour()}>
-              Delete tour
-            </button>
-            <span className={cx(styles.saveState, saveState === "error" && styles.saveStateError)}>
-              {saveState === "saving" ? "Saving" : saveState === "error" ? "Save failed" : "Saved"}
-            </span>
+            {!isPublic ? (
+              <div className={styles.railFooter}>
+                <button
+                  type="button"
+                  className={cx(styles.addPointButton, isAdding && styles.addPointButtonActive)}
+                  onClick={addCardFromButton}
+                  disabled={!isAdmin && cards.length >= paidPointLimit}
+                  aria-label="Add point"
+                  title="Add point"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  className={cx(styles.button, styles.buttonQuiet)}
+                  onClick={() => setIsAdding((current) => !current)}
+                >
+                  {isAdding ? "Click map" : "Place on map"}
+                </button>
+                <button type="button" className={cx(styles.button, styles.buttonDanger)} onClick={() => void deleteTour()}>
+                  Delete tour
+                </button>
+                <span className={cx(styles.saveState, saveState === "error" && styles.saveStateError)}>
+                  {saveState === "saving" ? "Saving" : saveState === "error" ? "Save failed" : "Saved"}
+                </span>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </aside>

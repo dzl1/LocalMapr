@@ -297,6 +297,59 @@
   padding: 14px;
 }
 
+.railCollapsed {
+  bottom: auto;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.railContent {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.railCollapseButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(31, 72, 52, 0.16);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(231, 240, 235, 0.94));
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(15, 36, 25, 0.14);
+}
+
+.railCollapsed .railCollapseButton {
+  position: static;
+  width: 44px;
+  height: 44px;
+}
+
+.railCollapseIcon {
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid #1f4834;
+  border-left: 2px solid #1f4834;
+  transform: rotate(45deg);
+}
+
+.railCollapseIconCollapsed {
+  transform: rotate(225deg);
+}
+
 .isEmbed {
   min-height: 520px;
 }
