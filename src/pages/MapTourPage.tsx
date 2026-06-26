@@ -1211,7 +1211,6 @@ export function MapTourPage() {
           isEmbedMode && styles.isEmbed,
           !isPublic && styles.isEditorMode,
         )}
-        onWheelCapture={handleTourWheel}
       >
       <MapContainer
         center={selectedCard ? [selectedCard.lat, selectedCard.lng] : viewport.center}
@@ -1219,7 +1218,7 @@ export function MapTourPage() {
         minZoom={3}
         maxZoom={18}
         className={styles.map}
-        scrollWheelZoom={!isPublic}
+        scrollWheelZoom
         zoomControl={false}
       >
         <ZoomControl position="bottomright" />
@@ -1318,13 +1317,13 @@ export function MapTourPage() {
 
         {!isRailCollapsed ? (
           <div className={styles.railContent}>
-            <Link className={styles.railLogoLink} to="/" aria-label="LocalMapr home">
+            <a className={styles.railLogoLink} href="https://localmapr.com/" aria-label="LocalMapr home">
               <img
                 className={styles.railLogo}
                 src="/brand/logo_dark.png"
                 alt="LocalMapr"
               />
-            </Link>
+            </a>
 
             {isPublic ? (
               <>
@@ -1450,6 +1449,7 @@ export function MapTourPage() {
               className={styles.cardList}
               ref={tourCardListRef}
               onScroll={handleTourCardListScroll}
+              onWheel={handleTourWheel}
             >
               {!cards.length ? <div className={styles.empty}>No tour points yet.</div> : null}
               {cards.map((card, index) => (
