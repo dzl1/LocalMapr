@@ -783,6 +783,7 @@
 
 .isPublic .railHeader,
 .isPublic .publicDescription,
+.isPublic .railLogoLink,
 .isPublic .card {
   pointer-events: auto;
 }
