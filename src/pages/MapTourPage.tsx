@@ -1298,22 +1298,24 @@ export function MapTourPage() {
       </MapContainer>
 
       <aside className={cx(styles.rail, isRailCollapsed && styles.railCollapsed)}>
-        <button
-          type="button"
-          className={styles.railCollapseButton}
-          aria-label={isRailCollapsed ? "Open side panel" : "Collapse side panel"}
-          aria-expanded={!isRailCollapsed}
-          onClick={() => setIsRailCollapsed((current) => !current)}
-          title={isRailCollapsed ? "Open side panel" : "Collapse side panel"}
-        >
-          <span
-            className={cx(
-              styles.railCollapseIcon,
-              isRailCollapsed && styles.railCollapseIconCollapsed,
-            )}
-            aria-hidden="true"
-          />
-        </button>
+        {!isPublic ? (
+          <button
+            type="button"
+            className={styles.railCollapseButton}
+            aria-label={isRailCollapsed ? "Open side panel" : "Collapse side panel"}
+            aria-expanded={!isRailCollapsed}
+            onClick={() => setIsRailCollapsed((current) => !current)}
+            title={isRailCollapsed ? "Open side panel" : "Collapse side panel"}
+          >
+            <span
+              className={cx(
+                styles.railCollapseIcon,
+                isRailCollapsed && styles.railCollapseIconCollapsed,
+              )}
+              aria-hidden="true"
+            />
+          </button>
+        ) : null}
 
         {!isRailCollapsed ? (
           <div className={styles.railContent}>
