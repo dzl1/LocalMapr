@@ -20,6 +20,11 @@
   max-width: 420px;
 }
 
+.logoLink {
+  display: inline-block;
+  transition: opacity 180ms ease;
+}
+
 .logo {
   display: block;
   width: min(220px, 100%);
@@ -87,6 +92,10 @@
   }
 
   .partnerLink:hover {
+    opacity: 0.85;
+  }
+
+  .logoLink:hover {
     opacity: 0.85;
   }
 }

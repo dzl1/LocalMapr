@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import styles from "./Footer.module.css";
 
 export function Footer() {
@@ -5,11 +6,13 @@ export function Footer() {
     <footer className={styles.footer}>
       <div className={styles.inner}>
         <div className={styles.brandBlock}>
-          <img
-            className={styles.logo}
-            src="/brand/logo_white.png"
-            alt="LocalMapr"
-          />
+          <Link className={styles.logoLink} to="/" aria-label="LocalMapr home">
+            <img
+              className={styles.logo}
+              src="/brand/logo_white.png"
+              alt="LocalMapr"
+            />
+          </Link>
           <p>Create and share small map-based webapps for local stories.</p>
         </div>
 

@@ -9,9 +9,11 @@ import { MapTourPage } from "./pages/MapTourPage";
 
 export default function App() {
   const location = useLocation();
+  const isMapToursHome =
+    location.pathname === "/map-tour" || location.pathname === "/map-tour/";
   const hideFooter =
-    location.pathname.startsWith("/map-tour") ||
-    location.pathname.startsWith("/tour/");
+    location.pathname.startsWith("/tour/") ||
+    (!isMapToursHome && location.pathname.startsWith("/map-tour/"));
 
   return (
     <>

@@ -212,16 +212,26 @@ function FitSelectedCard({ card }: { card: TourCard | null }) {
 }
 
 function TrackViewport({
+  isPaused,
   onChange,
 }: {
+  isPaused: () => boolean;
   onChange: (next: { center: [number, number]; zoom: number }) => void;
 }) {
   useMapEvents({
     moveend(event) {
+      if (isPaused()) {
+        return;
+      }
+
       const center = event.target.getCenter();
       onChange({ center: [center.lat, center.lng], zoom: event.target.getZoom() });
     },
     zoomend(event) {
+      if (isPaused()) {
+        return;
+      }
+
       const center = event.target.getCenter();
       onChange({ center: [center.lat, center.lng], zoom: event.target.getZoom() });
     },
@@ -347,6 +357,7 @@ export function MapTourPage() {
   const [cards, setCards] = useState<TourCard[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isTourDetailsCollapsed, setIsTourDetailsCollapsed] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [viewport, setViewport] = useState<{ center: [number, number]; zoom: number }>({
     center: defaultCenter,
@@ -360,6 +371,7 @@ export function MapTourPage() {
   const initializedRef = useRef(false);
   const tourCardListRef = useRef<HTMLDivElement | null>(null);
   const tourCardRefs = useRef(new Map<string, HTMLButtonElement>());
+  const draggingCardIdRef = useRef<string | null>(null);
   const ignoreScrollSyncRef = useRef(false);
   const tourCardScrollFrameRef = useRef<number | null>(null);
   const wheelRemainderRef = useRef(0);
@@ -531,11 +543,22 @@ export function MapTourPage() {
   }, [isPublic, searchParams, setSearchParams, user]);
 
   useEffect(() => {
-    if (!initializedRef.current || isPublic || isListMode || !app || !user || !dirty) {
+    if (
+      !initializedRef.current ||
+      isPublic ||
+      isListMode ||
+      !app ||
+      !user ||
+      !dirty
+    ) {
       return undefined;
     }
 
     const timer = window.setTimeout(() => {
+      if (draggingCardIdRef.current) {
+        return;
+      }
+
       void persistChanges(true);
     }, 1200);
 
@@ -1063,38 +1086,61 @@ export function MapTourPage() {
 
     return (
       <main className={styles.homePage}>
-        <section className={styles.homeShell}>
-          <header className={styles.homeHeader}>
-            <div>
-              <p className={styles.kicker}>Map Tour</p>
-              <h1>Your Map Tours</h1>
-            </div>
-            <Link className={styles.iconButton} to="/dashboard">
+        <header className={styles.homeNav}>
+          <Link className={styles.brand} to="/" aria-label="LocalMapr home">
+            <img
+              className={styles.brandLogo}
+              src="/brand/logo_dark.png"
+              alt="LocalMapr"
+            />
+          </Link>
+          <div className={styles.homeNavActions}>
+            <Link className={styles.ghostButton} to="/dashboard">
               Dashboard
             </Link>
-          </header>
+          </div>
+        </header>
 
-          {message ? <p className={styles.alert}>{message}</p> : null}
-          {error ? <p className={cx(styles.alert, styles.alertError)}>{error}</p> : null}
+        <section className={styles.homeHero}>
+          <div>
+            <p>Map Tours</p>
+            <h1>Your Map Tours</h1>
+            <span>{user?.email}</span>
+          </div>
 
-          <div className={styles.homeToolbar}>
-            <div className={styles.accountCard}>
-              <span>{user?.email || "Signed in"}</span>
-              <strong>
-                {isAdmin
-                  ? "Super admin: unlimited tours and points"
-                  : `${allTours.length ? "Free tour used" : "Free tour available"} | ${unusedTourCredits} tour credits`}
-              </strong>
-            </div>
-            <div className={styles.dashboardActions}>
-              <button type="button" className={styles.button} onClick={() => void createTourFromList()} disabled={!canCreateTour}>
-                Create Map Tour
+          <div className={styles.homePlanPanel}>
+            <span>Credits</span>
+            <strong>
+              {isAdmin
+                ? "Unlimited"
+                : allTours.length
+                  ? `${unusedTourCredits} tour credits`
+                  : "Free tour available"}
+            </strong>
+            <p>
+              {isAdmin
+                ? "Super admins can create unlimited tours and points."
+                : `${Math.max(0, 1 - allTours.length)} free tours remaining. ${unusedTourCredits} paid tour credits available.`}
+            </p>
+            <button type="button" onClick={() => void createTourFromList()} disabled={!canCreateTour}>
+              Create Map Tour
+            </button>
+            {!canCreateTour ? (
+              <button type="button" className={styles.secondaryButton} onClick={() => void startTourCreditCheckout()} disabled={isCheckingOut}>
+                {isCheckingOut ? "Opening..." : "Buy tour credit"}
               </button>
-              {!canCreateTour ? (
-                <button type="button" className={cx(styles.button, styles.buttonQuiet)} onClick={() => void startTourCreditCheckout()} disabled={isCheckingOut}>
-                  {isCheckingOut ? "Opening..." : "Buy tour credit"}
-                </button>
-              ) : null}
+            ) : null}
+          </div>
+        </section>
+
+        {message ? <p className={styles.notice}>{message}</p> : null}
+        {error ? <p className={styles.error}>{error}</p> : null}
+
+        <section className={styles.homePanel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <p>Library</p>
+              <h2>{allTours.length} tours</h2>
             </div>
           </div>
 
@@ -1128,17 +1174,17 @@ export function MapTourPage() {
     );
   }
 
-  return (
+  const mapTourMain = (
     <main
-      className={cx(
-        styles.tourPage,
-        isAdding && styles.isAdding,
-        isPublic && styles.isPublic,
-        isEmbedMode && styles.isEmbed,
-        !isPublic && styles.isEditorMode,
-      )}
-      onWheelCapture={handleTourWheel}
-    >
+        className={cx(
+          styles.tourPage,
+          isAdding && styles.isAdding,
+          isPublic && styles.isPublic,
+          isEmbedMode && styles.isEmbed,
+          !isPublic && styles.isEditorMode,
+        )}
+        onWheelCapture={handleTourWheel}
+      >
       <MapContainer
         center={selectedCard ? [selectedCard.lat, selectedCard.lng] : viewport.center}
         zoom={Math.max(viewport.zoom, 12)}
@@ -1163,6 +1209,7 @@ export function MapTourPage() {
           zIndex={2}
         />
         <TrackViewport
+          isPaused={() => Boolean(draggingCardIdRef.current)}
           onChange={(next) => {
             setViewport(next);
             if (!isPublic) {
@@ -1193,11 +1240,25 @@ export function MapTourPage() {
                   setSelectedCardId(card.id);
                   event.target.openPopup();
                 },
-                mouseover: (event) => event.target.openPopup(),
-                mouseout: (event) => event.target.closePopup(),
+                dragstart: (event) => {
+                  draggingCardIdRef.current = card.id;
+                  event.target.closePopup();
+                },
+                mouseover: (event) => {
+                  if (!draggingCardIdRef.current) {
+                    event.target.openPopup();
+                  }
+                },
+                mouseout: (event) => {
+                  if (!draggingCardIdRef.current) {
+                    event.target.closePopup();
+                  }
+                },
                 dragend: (event) => {
                   const next = event.target.getLatLng();
                   updateCardPosition(card.id, next.lat, next.lng);
+                  draggingCardIdRef.current = null;
+                  setSelectedCardId(card.id);
                 },
               }}
             >
@@ -1210,108 +1271,131 @@ export function MapTourPage() {
       </MapContainer>
 
       <aside className={styles.rail}>
-        {!isPublic ? (
-          <Link className={styles.backLink} to="/map-tour">
-            Back to Map Tours
-          </Link>
-        ) : null}
-
-        <div className={styles.railHeader}>
-          {isPublic ? (
-            <h1 className={styles.publicTitle}>{title}</h1>
-          ) : (
-            <input
-              className={styles.titleInput}
-              value={title}
-              onChange={(event) => {
-                setTitle(event.target.value);
-                setDirty(true);
-              }}
-              aria-label="Map tour title"
-            />
-          )}
-        </div>
+        <Link className={styles.railLogoLink} to="/" aria-label="LocalMapr home">
+          <img
+            className={styles.railLogo}
+            src="/brand/logo_dark.png"
+            alt="LocalMapr"
+          />
+        </Link>
 
         {isPublic ? (
-          description ? <p className={styles.publicDescription}>{description}</p> : null
+          <>
+            <div className={styles.railHeader}>
+              <h1 className={styles.publicTitle}>{title}</h1>
+            </div>
+
+            {description ? <p className={styles.publicDescription}>{description}</p> : null}
+          </>
         ) : (
-          <textarea
-            className={styles.descriptionInput}
-            value={description}
-            onChange={(event) => {
-              setDescription(event.target.value);
-              setDirty(true);
-            }}
-            rows={5}
-            placeholder="Description"
-          />
-        )}
-
-        {!isPublic ? (
-          <div className={styles.limitRow}>
-            <span>
-              {cards.length}/{isAdmin ? "unlimited" : selectedPointLimit} points
-            </span>
-            {!isAdmin && !hasPointUpgrade && cards.length >= freePointLimit ? (
-              <button
-                type="button"
-                className={styles.linkButton}
-                onClick={() => void startPointUpgradeCheckout()}
-                disabled={upgradePending}
-              >
-                {upgradePending ? "Opening..." : "Upgrade to 10"}
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-
-        {!isPublic ? (
-          <section className={styles.sharePanel}>
-            <label className={styles.checkboxRow}>
-              <input
-                type="checkbox"
-                checked={isPublished}
-                onChange={(event) => {
-                  setIsPublished(event.target.checked);
-                  setDirty(true);
-                }}
+          <section className={styles.detailsCard}>
+            <button
+              type="button"
+              className={styles.detailsToggle}
+              aria-label={isTourDetailsCollapsed ? "Open tour details" : "Close tour details"}
+              aria-expanded={!isTourDetailsCollapsed}
+              onClick={() => setIsTourDetailsCollapsed((current) => !current)}
+            >
+              <span>Tour details</span>
+              <span
+                className={cx(
+                  styles.detailsToggleIcon,
+                  !isTourDetailsCollapsed && styles.detailsToggleIconOpen,
+                )}
+                aria-hidden="true"
               />
-              <span>Published</span>
-            </label>
+            </button>
 
-            {isPublished && app?.slug ? (
-              <>
-                <label>
-                  <span>Share URL</span>
-                  <div className={styles.copyRow}>
-                    <input readOnly value={publicUrl} />
-                    <button type="button" className={cx(styles.button, styles.buttonQuiet)} onClick={() => void copyText(publicUrl, "Share URL")}>
-                      Copy
+            {!isTourDetailsCollapsed ? (
+              <div className={styles.detailsCardBody}>
+                <div className={styles.railHeader}>
+                  <input
+                    className={styles.titleInput}
+                    value={title}
+                    onChange={(event) => {
+                      setTitle(event.target.value);
+                      setDirty(true);
+                    }}
+                    aria-label="Map tour title"
+                  />
+                </div>
+
+                <textarea
+                  className={styles.descriptionInput}
+                  value={description}
+                  onChange={(event) => {
+                    setDescription(event.target.value);
+                    setDirty(true);
+                  }}
+                  rows={5}
+                  placeholder="Description"
+                />
+
+                <div className={styles.limitRow}>
+                  <span>
+                    {cards.length}/{isAdmin ? "unlimited" : selectedPointLimit} points
+                  </span>
+                  {!isAdmin && !hasPointUpgrade && cards.length >= freePointLimit ? (
+                    <button
+                      type="button"
+                      className={styles.linkButton}
+                      onClick={() => void startPointUpgradeCheckout()}
+                      disabled={upgradePending}
+                    >
+                      {upgradePending ? "Opening..." : "Upgrade to 10"}
                     </button>
-                  </div>
+                  ) : null}
+                </div>
+
+                <section className={styles.sharePanel}>
+                <label className={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    checked={isPublished}
+                    onChange={(event) => {
+                      setIsPublished(event.target.checked);
+                      setDirty(true);
+                    }}
+                  />
+                  <span>Published</span>
                 </label>
-                <label>
-                  <span>Embed URL</span>
-                  <div className={styles.copyRow}>
-                    <input readOnly value={embedUrl} />
-                    <button type="button" className={cx(styles.button, styles.buttonQuiet)} onClick={() => void copyText(embedUrl, "Embed URL")}>
-                      Copy
-                    </button>
-                  </div>
-                </label>
-                <label>
-                  <span>Embed code</span>
-                  <div className={styles.copyRow}>
-                    <input readOnly value={embedCode} />
-                    <button type="button" className={cx(styles.button, styles.buttonQuiet)} onClick={() => void copyText(embedCode, "Embed code")}>
-                      Copy
-                    </button>
-                  </div>
-                </label>
-              </>
+
+                {isPublished && app?.slug ? (
+                  <>
+                    <label>
+                      <span>Share URL</span>
+                      <div className={styles.copyRow}>
+                        <input readOnly value={publicUrl} />
+                        <button type="button" className={cx(styles.button, styles.buttonQuiet)} onClick={() => void copyText(publicUrl, "Share URL")}>
+                          Copy
+                        </button>
+                      </div>
+                    </label>
+                    <label>
+                      <span>Embed URL</span>
+                      <div className={styles.copyRow}>
+                        <input readOnly value={embedUrl} />
+                        <button type="button" className={cx(styles.button, styles.buttonQuiet)} onClick={() => void copyText(embedUrl, "Embed URL")}>
+                          Copy
+                        </button>
+                      </div>
+                    </label>
+                    <label>
+                      <span>Embed code</span>
+                      <div className={styles.copyRow}>
+                        <input readOnly value={embedCode} />
+                        <button type="button" className={cx(styles.button, styles.buttonQuiet)} onClick={() => void copyText(embedCode, "Embed code")}>
+                          Copy
+                        </button>
+                      </div>
+                    </label>
+                  </>
+                ) : null}
+              </section>
+              </div>
             ) : null}
           </section>
-        ) : null}
+        )}
 
         {message ? <p className={styles.alert}>{message}</p> : null}
         {error ? <p className={cx(styles.alert, styles.alertError)}>{error}</p> : null}
@@ -1513,6 +1597,8 @@ export function MapTourPage() {
           </div>
         </aside>
       ) : null}
-    </main>
+      </main>
   );
+
+  return mapTourMain;
 }
