@@ -312,6 +312,28 @@
   outline: 3px solid rgba(13, 143, 90, 0.26);
 }
 
+.colorPickerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.colorPicker {
+  width: 52px !important;
+  min-width: 52px;
+  height: 38px;
+  padding: 4px !important;
+  border-radius: 8px !important;
+  cursor: pointer;
+}
+
+.colorPickerRow span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .sharePanel {
   display: flex;
   flex-direction: column;

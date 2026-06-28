@@ -27,6 +27,7 @@ type GuideStop = {
   id: string;
   title: string;
   notes: string;
+  popupText: string;
   lat: number;
   lng: number;
   color: string;
@@ -164,6 +165,7 @@ function createStop(index: number, lat = defaultCenter[0], lng = defaultCenter[1
     id: `guide-stop-${Date.now()}-${index}`,
     title: `Stop ${index + 1}`,
     notes: "",
+    popupText: "",
     lat,
     lng,
     color: colors[index % colors.length],
@@ -179,6 +181,7 @@ function parseConfig(config: Json): GuideConfig {
       id: String(stop.id || `guide-stop-${index}`),
       title: String(stop.title || `Stop ${index + 1}`),
       notes: normalizeNotes(String(stop.notes || "")),
+      popupText: String(stop.popupText || ""),
       lat: toNumber(stop.lat, defaultCenter[0]),
       lng: toNumber(stop.lng, defaultCenter[1]),
       color: String(stop.color || colors[index % colors.length]),
@@ -411,13 +414,6 @@ function RichNotesEditor({
         return;
       }
 
-      if (key === "b") {
-        event.preventDefault();
-        saveSelection();
-        runCommand("bold", { requireSelection: true });
-        return;
-      }
-
       if (key === "i") {
         event.preventDefault();
         saveSelection();
@@ -449,14 +445,6 @@ function RichNotesEditor({
   return (
     <div className={styles.richTextShell}>
       <div className={styles.richTextToolbar}>
-        <button
-          type="button"
-          onMouseDown={prepareToolbarSelection}
-          onClick={() => runCommand("bold", { requireSelection: true })}
-          aria-label="Bold"
-        >
-          B
-        </button>
         <button
           type="button"
           onMouseDown={prepareToolbarSelection}
@@ -928,39 +916,42 @@ export function LocalGuideEditorPage() {
           />
         ) : null}
 
-        {stops.map((stop, index) => (
-          <Marker
-            key={stop.id}
-            position={[stop.lat, stop.lng]}
-            icon={createStopIcon(index + 1, stop.color, stop.id === selectedStopId)}
-            draggable={!isPublic}
-            eventHandlers={{
-              click: (event) => {
-                if (draggingStopIdRef.current) {
-                  return;
-                }
+        {stops.map((stop, index) => {
+          const pinPopupText = stop.popupText.trim() || stop.title;
 
-                setSelectedStopId(stop.id);
-                event.target.openPopup();
-              },
-              dragstart: (event) => {
-                draggingStopIdRef.current = stop.id;
-                event.target.closePopup();
-              },
-              dragend: (event) => {
-                const next = event.target.getLatLng();
-                updateStop(stop.id, { lat: next.lat, lng: next.lng });
-                draggingStopIdRef.current = null;
-                setSelectedStopId(stop.id);
-              },
-            }}
-          >
-            <Popup closeButton={false}>
-              <strong>{stop.title}</strong>
-              <FormattedNotes className={styles.pinNotes} notes={stop.notes} />
-            </Popup>
-          </Marker>
-        ))}
+          return (
+            <Marker
+              key={stop.id}
+              position={[stop.lat, stop.lng]}
+              icon={createStopIcon(index + 1, stop.color, stop.id === selectedStopId)}
+              draggable={!isPublic}
+              eventHandlers={{
+                click: (event) => {
+                  if (draggingStopIdRef.current) {
+                    return;
+                  }
+
+                  setSelectedStopId(stop.id);
+                  event.target.openPopup();
+                },
+                dragstart: (event) => {
+                  draggingStopIdRef.current = stop.id;
+                  event.target.closePopup();
+                },
+                dragend: (event) => {
+                  const next = event.target.getLatLng();
+                  updateStop(stop.id, { lat: next.lat, lng: next.lng });
+                  draggingStopIdRef.current = null;
+                  setSelectedStopId(stop.id);
+                },
+              }}
+            >
+              <Popup closeButton={false}>
+                <strong>{pinPopupText}</strong>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
 
       <aside className={styles.sidebar}>
@@ -1166,6 +1157,27 @@ export function LocalGuideEditorPage() {
               value={selectedStop.title}
               onChange={(event) => updateStop(selectedStop.id, { title: event.target.value })}
             />
+          </label>
+          <label>
+            Pin popup text
+            <textarea
+              rows={2}
+              value={selectedStop.popupText}
+              onChange={(event) => updateStop(selectedStop.id, { popupText: event.target.value })}
+            />
+          </label>
+          <label>
+            Point colour
+            <div className={styles.colorPickerRow}>
+              <input
+                type="color"
+                className={styles.colorPicker}
+                value={selectedStop.color}
+                onChange={(event) => updateStop(selectedStop.id, { color: event.target.value })}
+                aria-label="Point colour"
+              />
+              <span>{selectedStop.color}</span>
+            </div>
           </label>
           <label>
             Notes
