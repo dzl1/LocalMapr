@@ -1,0 +1,642 @@
+.editorPage,
+.statusPage {
+  min-height: 100vh;
+  color: #102136;
+  background: #dbe5df;
+  font-family: var(--font-sora), Arial, Helvetica, sans-serif;
+}
+
+.editorPage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  min-height: 680px;
+  overflow: hidden;
+}
+
+.map {
+  width: 100vw;
+  height: 100vh;
+  min-height: 680px;
+}
+
+.isEmbed,
+.isEmbed .map {
+  min-height: 520px;
+}
+
+.isEmbed .sidebar {
+  top: 12px;
+  bottom: 12px;
+  left: 12px;
+  width: min(430px, calc(100vw - 24px));
+}
+
+.isPublic .sidebar {
+  max-height: calc(100vh - 36px);
+}
+
+.sidebar,
+.stopEditor,
+.statusCard {
+  border: 1px solid rgba(219, 229, 223, 0.95);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.84));
+  box-shadow: 0 18px 40px rgba(15, 36, 25, 0.16);
+  backdrop-filter: blur(14px);
+}
+
+.sidebar {
+  position: absolute;
+  z-index: 1000;
+  top: 18px;
+  bottom: 18px;
+  left: 18px;
+  display: flex;
+  width: min(420px, calc(100vw - 36px));
+  flex-direction: column;
+  padding: 14px;
+}
+
+.stopEditor {
+  position: absolute;
+  z-index: 1000;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  width: min(380px, calc(100vw - 36px));
+  max-height: calc(100vh - 36px);
+  gap: 12px;
+  overflow: auto;
+  padding: 16px;
+}
+
+.logoLink {
+  display: inline-flex;
+  align-self: flex-start;
+  width: min(220px, 72%);
+  margin-bottom: 14px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.logoLink img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.guideCard {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.guideCardToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.guideCardToolbar a {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.guideCardToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.chevronIcon {
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid #1f4834;
+  border-bottom: 2px solid #1f4834;
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+.chevronIconOpen {
+  transform: rotate(225deg);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardHeader p {
+  color: #086242;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.cardHeader h1,
+.cardHeader h2 {
+  margin-top: 4px;
+  color: #102136;
+  font-size: 24px;
+  line-height: 1.08;
+}
+
+.cardHeader h2 {
+  font-size: 20px;
+}
+
+.cardHeader a {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.publicDescription {
+  margin-top: 10px;
+  color: #536172;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.guideCard label,
+.stopEditor label {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.guideCard input,
+.guideCard textarea,
+.stopEditor input,
+.stopEditor textarea {
+  width: 100%;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 8px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.88);
+  color: #102136;
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.guideCard textarea,
+.stopEditor textarea {
+  resize: vertical;
+}
+
+.richTextShell {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.richTextToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 7px;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.72);
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.richTextToolbar button,
+.richTextToolbar select {
+  min-width: 32px;
+  min-height: 30px;
+  border: 1px solid rgba(31, 72, 52, 0.16);
+  border-radius: 7px;
+  background: #ffffff;
+  color: #1f4834;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.richTextToolbar select {
+  min-width: 78px;
+  padding: 0 6px;
+}
+
+.richTextEditor {
+  min-height: 150px;
+  max-height: 250px;
+  overflow: auto;
+  padding: 11px 12px;
+  color: #102136;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  outline: none;
+}
+
+.richTextEditor:empty::before {
+  color: #94a3b8;
+  content: "Notes";
+}
+
+.richTextEditor ul,
+.pinNotes ul {
+  margin: 6px 0 0 18px;
+  padding: 0;
+}
+
+.richTextEditor li,
+.pinNotes li {
+  margin-top: 4px;
+}
+
+.guideCard input:focus,
+.guideCard textarea:focus,
+.stopEditor input:focus,
+.stopEditor textarea:focus,
+.richTextShell:focus-within {
+  border-color: #0d8f5a;
+  box-shadow: 0 0 0 3px rgba(13, 143, 90, 0.14);
+}
+
+.routeStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.routeColorRow {
+  display: grid;
+  gap: 8px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.routeColorRow > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.routeColorRow button {
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(255, 255, 255, 0.86);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 36, 25, 0.18);
+}
+
+.routeColorRow button.activeColor {
+  outline: 3px solid rgba(13, 143, 90, 0.26);
+}
+
+.sharePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.sharePanel label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.checkboxRow {
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkboxRow input {
+  width: 18px;
+  height: 18px;
+  accent-color: #1f4834;
+}
+
+.copyRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.copyRow input {
+  min-width: 0;
+}
+
+.copyRow button {
+  min-height: 34px;
+  border: 1px solid rgba(31, 72, 52, 0.16);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(231, 240, 235, 0.9));
+  color: #1f4834;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.notice,
+.error {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.notice {
+  color: #086242;
+  background: #dff4e7;
+}
+
+.error {
+  color: #8f2f22;
+  background: #ffe8e2;
+}
+
+.stopList {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  overflow: auto;
+  padding: 2px 2px 4px;
+  background: transparent;
+}
+
+.stopItem {
+  display: grid;
+  min-height: 86px;
+  flex: 0 0 auto;
+  align-items: start;
+  width: 100%;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  max-height: 800px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid rgba(219, 229, 223, 0.96);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 11px;
+  color: #102136;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(15, 36, 25, 0.08);
+}
+
+.stopItem.active {
+  border-color: rgba(13, 143, 90, 0.42);
+  box-shadow: 0 0 0 3px rgba(13, 143, 90, 0.14), 0 10px 22px rgba(15, 36, 25, 0.12);
+}
+
+.stopItem > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.stopItem strong {
+  color: #102136;
+  font-size: 14px;
+}
+
+.stopItem small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.stopItemNotes {
+  display: block;
+  max-height: none;
+  overflow: visible;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.stopItemNotes div {
+  margin-top: 3px;
+}
+
+.stopItemNotes ul {
+  margin: 4px 0 0 16px;
+  padding: 0;
+}
+
+.stopItemNotes li {
+  margin-top: 3px;
+}
+
+.pinNotes {
+  min-width: 180px;
+  max-width: 280px;
+  margin-top: 7px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pinNotes div {
+  margin-top: 4px;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 12px;
+  text-align: center;
+}
+
+.sidebarFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(203, 213, 225, 0.7);
+}
+
+.sidebarFooter button,
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(31, 72, 52, 0.96), rgba(47, 108, 77, 0.82));
+  color: #ffffff;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.secondaryButton {
+  border-color: rgba(31, 72, 52, 0.16) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(231, 240, 235, 0.9)) !important;
+  color: #1f4834 !important;
+}
+
+.activeButton {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.96), rgba(59, 130, 246, 0.8)) !important;
+}
+
+.dangerButton {
+  background: linear-gradient(135deg, rgba(185, 28, 28, 0.95), rgba(239, 68, 68, 0.82));
+}
+
+.sidebarFooter span {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.coordGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stopIcon {
+  border: 0;
+  background: transparent;
+}
+
+.stopIcon span {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: var(--stop-color);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(15, 36, 25, 0.25);
+}
+
+.stopIcon span.stopIconActive {
+  width: 40px;
+  height: 40px;
+  transform: translate(-3px, -3px);
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.5), 0 10px 24px rgba(15, 36, 25, 0.3);
+}
+
+.statusPage {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.statusCard {
+  width: min(680px, 100%);
+  padding: 24px;
+}
+
+.statusCard h1 {
+  color: #102136;
+  font-size: 34px;
+}
+
+.statusCard p {
+  margin-top: 10px;
+  color: #536172;
+}
+
+.statusCard a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  margin-top: 14px;
+  padding: 0 12px;
+  color: #ffffff;
+  background: #0d8f5a;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (max-width: 980px) {
+  .editorPage,
+  .map {
+    min-height: 820px;
+  }
+
+  .sidebar {
+    top: 10px;
+    right: 10px;
+    bottom: auto;
+    left: 10px;
+    width: auto;
+    max-height: 45vh;
+  }
+
+  .stopEditor {
+    top: auto;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    width: auto;
+    max-height: 35vh;
+  }
+}

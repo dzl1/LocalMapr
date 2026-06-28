@@ -185,6 +185,11 @@ create policy "Super admins can read all map apps"
 on public.map_apps for select
 using (public.is_super_admin());
 
+drop policy if exists "Anyone can read published map apps" on public.map_apps;
+create policy "Anyone can read published map apps"
+on public.map_apps for select
+using (status = 'published');
+
 drop policy if exists "Users can create their own map apps" on public.map_apps;
 create policy "Users can create their own map apps"
 on public.map_apps for insert

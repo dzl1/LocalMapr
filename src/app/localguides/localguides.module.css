@@ -1,0 +1,379 @@
+.page {
+  min-height: 100vh;
+  padding: 24px;
+  color: #102136;
+  background: #f6faf7;
+  font-family: var(--font-sora), Arial, Helvetica, sans-serif;
+}
+
+.header,
+.hero,
+.infoGrid,
+.workspaceGrid,
+.notice,
+.error {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 58px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  width: 296px;
+}
+
+.brandLogo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.accountEmail {
+  max-width: 260px;
+  overflow: hidden;
+  color: #536172;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ghostButton,
+.heroPanel a,
+.signInPanel a,
+.createPanel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.ghostButton {
+  padding: 0 14px;
+  color: #344659;
+  border: 1px solid #d8e5df;
+  background: #ffffff;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: end;
+  padding: 54px 0 28px;
+}
+
+.heroCopy p,
+.heroPanel > span,
+.createPanel > div p,
+.signInPanel > p,
+.panelHeader p,
+.infoCard h2,
+.guideItem span {
+  color: #086242;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 760px;
+  margin-top: 10px;
+  font-size: clamp(42px, 7vw, 78px);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.heroCopy span {
+  display: block;
+  max-width: 680px;
+  margin-top: 14px;
+  color: #536172;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.heroPanel,
+.infoCard,
+.createPanel,
+.signInPanel,
+.guidesPanel {
+  border: 1px solid #dfe7e6;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(16, 33, 54, 0.07);
+}
+
+.heroPanel,
+.createPanel,
+.signInPanel,
+.guidesPanel,
+.infoCard {
+  padding: 22px;
+}
+
+.heroPanel strong,
+.createPanel h2,
+.signInPanel h2,
+.panelHeader h2 {
+  display: block;
+  margin-top: 8px;
+  color: #102136;
+  font-size: 28px;
+  line-height: 1.08;
+}
+
+.heroPanel p,
+.signInPanel span,
+.infoCard p,
+.guideItem p {
+  margin-top: 10px;
+  color: #536172;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.heroPanel a,
+.signInPanel a,
+.createPanel button {
+  width: 100%;
+  margin-top: 18px;
+  color: #ffffff;
+  border: 0;
+  background: #0d8f5a;
+  cursor: pointer;
+}
+
+.notice,
+.error {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.notice {
+  color: #086242;
+  background: #dff4e7;
+}
+
+.error {
+  color: #8f2f22;
+  background: #ffe8e2;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  padding: 10px 0 24px;
+}
+
+.infoCard h2 {
+  font-size: 12px;
+}
+
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  padding-bottom: 64px;
+}
+
+.createPanel {
+  display: grid;
+  gap: 18px;
+}
+
+.createPanel label {
+  display: grid;
+  gap: 8px;
+  color: #344659;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.createPanel input,
+.createPanel textarea {
+  width: 100%;
+  padding: 12px;
+  color: #102136;
+  border: 1px solid #d7e2df;
+  border-radius: 8px;
+  background: #ffffff;
+  font: inherit;
+}
+
+.createPanel input {
+  min-height: 46px;
+}
+
+.createPanel textarea {
+  resize: vertical;
+}
+
+.createPanel input:focus,
+.createPanel textarea:focus {
+  border-color: #0d8f5a;
+  outline: 3px solid rgba(13, 143, 90, 0.14);
+}
+
+.createPanel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.guideList {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.guideItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #e3ebe8;
+  border-radius: 8px;
+  background: #fbfdfb;
+}
+
+.guideLink {
+  display: block;
+  min-width: 0;
+}
+
+.guideItem h3 {
+  margin-top: 7px;
+  color: #102136;
+  font-size: 21px;
+}
+
+.guideMeta {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  color: #536172;
+  font-size: 12px;
+  text-align: right;
+}
+
+.guideMeta code {
+  max-width: 260px;
+  overflow: hidden;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #eef5f1;
+  color: #344659;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deleteGuideButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  border-radius: 8px;
+  background: #fff7f5;
+  color: #b91c1c;
+  cursor: pointer;
+}
+
+.deleteGuideButton:hover {
+  border-color: rgba(185, 28, 28, 0.38);
+  background: #ffe8e2;
+}
+
+.deleteGuideButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.deleteGuideButton svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  margin-top: 18px;
+  padding: 18px;
+  color: #536172;
+  border: 1px dashed #cbdad5;
+  border-radius: 8px;
+  background: #fbfdfb;
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+@media (max-width: 920px) {
+  .hero,
+  .workspaceGrid,
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .guideItem {
+    grid-template-columns: 1fr;
+  }
+
+  .guideMeta {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 18px;
+  }
+
+  .header,
+  .headerActions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .brand {
+    width: min(296px, 100%);
+  }
+}

@@ -20,6 +20,7 @@ const appTypes = [
     copy: "Publish neighborhood picks, event maps, visitor trails, and pop-up directories without rebuilding from scratch.",
     image: "/local-guides-card.png",
     imageAlt: "Local Guides preview showing places and guide notes",
+    href: "/local-guides",
   },
   {
     title: "Field apps",
