@@ -21,6 +21,7 @@ import "leaflet/dist/leaflet.css";
 import styles from "@/app/maptour/maptour.module.css";
 
 type MapApp = Database["public"]["Tables"]["map_apps"]["Row"];
+type MapAppUpdate = Database["public"]["Tables"]["map_apps"]["Update"];
 type MapTourPurchase =
   Database["public"]["Tables"]["map_tour_purchases"]["Row"];
 
@@ -412,36 +413,45 @@ export function MapTourPage() {
 
   useEffect(() => {
     async function load() {
-      if (!hasSupabase) {
+      if (!hasSupabase && !isPublic) {
         setError("Supabase is not configured for this workspace.");
         setLoading(false);
         return;
       }
 
-      const supabase = createBrowserSupabaseClient();
       setLoading(true);
       setError("");
       initializedRef.current = false;
 
       if (isPublic) {
-        const { data, error: appError } = await supabase
-          .from("map_apps")
-          .select("*")
-          .eq("slug", slug ?? "")
-          .eq("app_type", "map_tour")
-          .eq("status", "published")
-          .maybeSingle();
+        let payload: { app?: MapApp; error?: string } = {};
+        let ok = false;
 
-        if (appError || !data) {
-          setError("This published map tour could not be found.");
+        try {
+          const response = await fetch(
+            `/api/map-tour/public?slug=${encodeURIComponent(slug ?? "")}`,
+          );
+          ok = response.ok;
+          payload = (await response.json().catch(() => ({}))) as {
+            app?: MapApp;
+            error?: string;
+          };
+        } catch {
+          setError("This published map tour could not be loaded.");
           setLoading(false);
           return;
         }
 
-        const config = parseConfig(data.config);
-        setApp(data);
-        setTitle(data.title);
-        setDescription(data.description || "");
+        if (!ok || !payload.app) {
+          setError(payload.error || "This published map tour could not be found.");
+          setLoading(false);
+          return;
+        }
+
+        const config = parseConfig(payload.app.config);
+        setApp(payload.app);
+        setTitle(payload.app.title);
+        setDescription(payload.app.description || "");
         setIsPublished(true);
         setCards(config.cards);
         setSelectedCardId(config.cards[0]?.id || null);
@@ -452,6 +462,7 @@ export function MapTourPage() {
         return;
       }
 
+      const supabase = createBrowserSupabaseClient();
       const {
         data: { user: currentUser },
       } = await supabase.auth.getUser();
@@ -879,18 +890,25 @@ export function MapTourPage() {
       center: viewport.center,
       zoom: viewport.zoom,
     };
+    const shouldUpdatePublishState = typeof overrides.isPublished === "boolean";
     const nextIsPublished = overrides.isPublished ?? isPublished;
+    const publishedAt = nextIsPublished ? new Date().toISOString() : null;
+    const nextConfig = serializeConfig(config);
+    const updatePayload: MapAppUpdate = {
+      title: title.trim() || "Untitled map tour",
+      description: description.trim() || null,
+      config: nextConfig,
+    };
+
+    if (shouldUpdatePublishState) {
+      updatePayload.status = nextIsPublished ? "published" : "draft";
+      updatePayload.published_at = publishedAt;
+    }
 
     const supabase = createBrowserSupabaseClient();
     const { error: updateError } = await supabase
       .from("map_apps")
-      .update({
-        title: title.trim() || "Untitled map tour",
-        description: description.trim() || null,
-        status: nextIsPublished ? "published" : "draft",
-        published_at: nextIsPublished ? new Date().toISOString() : null,
-        config: serializeConfig(config),
-      })
+      .update(updatePayload)
       .eq("id", app.id)
       .eq("owner_id", user.id);
 
@@ -904,9 +922,14 @@ export function MapTourPage() {
       current
         ? {
             ...current,
+            config: nextConfig,
             description: description.trim() || null,
-            published_at: nextIsPublished ? new Date().toISOString() : null,
-            status: nextIsPublished ? "published" : "draft",
+            published_at: shouldUpdatePublishState ? publishedAt : current.published_at,
+            status: shouldUpdatePublishState
+              ? nextIsPublished
+                ? "published"
+                : "draft"
+              : current.status,
             title: title.trim() || "Untitled map tour",
           }
         : current,
