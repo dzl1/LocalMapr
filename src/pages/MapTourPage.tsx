@@ -1419,13 +1419,13 @@ export function MapTourPage() {
 
         {!isRailCollapsed ? (
           <div className={styles.railContent}>
-            <a className={styles.railLogoLink} href="https://localmapr.com/" aria-label="LocalMapr home">
+            <Link className={styles.railLogoLink} to="/map-tour" aria-label="Map Tours home">
               <img
                 className={styles.railLogo}
                 src="/brand/logo_dark.png"
                 alt="LocalMapr"
               />
-            </a>
+            </Link>
 
             {isPublic ? (
               <>
