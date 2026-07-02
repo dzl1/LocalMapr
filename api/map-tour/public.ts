@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createClient } from "@supabase/supabase-js";
 
 type ApiRequest = IncomingMessage & {
   method?: string;
@@ -65,25 +64,32 @@ export default async function handler(
     return;
   }
 
-  const supabase = createClient(config.url, config.serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
+  const params = new URLSearchParams({
+    app_type: "eq.map_tour",
+    limit: "1",
+    select: "*",
+    slug: `eq.${slug}`,
+    status: "eq.published",
+  });
+  const supabaseResponse = await fetch(`${config.url}/rest/v1/map_apps?${params}`, {
+    headers: {
+      apikey: config.serviceRoleKey,
+      authorization: `Bearer ${config.serviceRoleKey}`,
     },
   });
+  const payload = await supabaseResponse.json().catch(() => null);
 
-  const { data, error } = await supabase
-    .from("map_apps")
-    .select("*")
-    .eq("slug", slug)
-    .eq("app_type", "map_tour")
-    .eq("status", "published")
-    .maybeSingle();
-
-  if (error) {
-    sendJson(response, 500, { error: error.message });
+  if (!supabaseResponse.ok) {
+    sendJson(response, 500, {
+      error:
+        payload && typeof payload === "object" && "message" in payload
+          ? String(payload.message)
+          : "Could not load public map tour.",
+    });
     return;
   }
+
+  const data = Array.isArray(payload) ? payload[0] : null;
 
   if (!data) {
     sendJson(response, 404, { error: "This published map tour could not be found." });
