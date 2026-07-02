@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { WheelEvent as ReactWheelEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import L from "leaflet";
 import {
@@ -614,6 +613,20 @@ export function MapTourPage() {
     [],
   );
 
+  useEffect(() => {
+    const listEl = tourCardListRef.current;
+
+    if (!listEl || !isPublic) {
+      return undefined;
+    }
+
+    listEl.addEventListener("wheel", handleTourWheel, { passive: false });
+
+    return () => {
+      listEl.removeEventListener("wheel", handleTourWheel);
+    };
+  }, [cards, isPublic, selectedCardId]);
+
   function updateSelectedCard(patch: Partial<TourCard>) {
     if (!selectedCard) {
       return;
@@ -781,21 +794,15 @@ export function MapTourPage() {
     });
   }
 
-  function handleTourWheel(event: ReactWheelEvent<HTMLElement>) {
-    if (!isPublic || !cards.length || !selectedCardId) {
+  function handleTourWheel(event: WheelEvent) {
+    if (!isPublic || cards.length < 2 || !selectedCardId) {
+      wheelRemainderRef.current = 0;
       return;
     }
 
     const rawDelta =
       Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
     if (!rawDelta) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (wheelStepLockRef.current) {
       return;
     }
 
@@ -815,6 +822,13 @@ export function MapTourPage() {
     const nextCard = cards[nextIndex];
 
     if (!nextCard || nextCard.id === selectedCardId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (wheelStepLockRef.current) {
       return;
     }
 
@@ -1541,7 +1555,6 @@ export function MapTourPage() {
               className={styles.cardList}
               ref={tourCardListRef}
               onScroll={handleTourCardListScroll}
-              onWheel={handleTourWheel}
             >
               {!cards.length ? <div className={styles.empty}>No tour points yet.</div> : null}
               {cards.map((card, index) => (
