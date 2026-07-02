@@ -932,74 +932,37 @@ export function MapTourPage() {
       return false;
     }
 
-    const response = await fetch("/api/map-tour/save", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        appId: app.id,
-        config: nextConfig,
-        description,
-        ...(shouldUpdatePublishState ? { isPublished: nextIsPublished } : {}),
-        title,
-      }),
-    });
-    const payload = await readApiResponse<{
-      app?: MapApp;
-      error?: string;
-    }>(response, "Map tour changes could not be saved.");
+    const publishedAt = nextIsPublished ? new Date().toISOString() : null;
+    const updatePayload: Database["public"]["Tables"]["map_apps"]["Update"] = {
+      config: nextConfig,
+      description: description.trim() || null,
+      title: title.trim() || "Untitled map tour",
+    };
 
-    if (!response.ok || !payload.app) {
-      if (import.meta.env.DEV && response.status === 404) {
-        const publishedAt = nextIsPublished ? new Date().toISOString() : null;
-        const updatePayload: Database["public"]["Tables"]["map_apps"]["Update"] = {
-          config: nextConfig,
-          description: description.trim() || null,
-          title: title.trim() || "Untitled map tour",
-        };
+    if (shouldUpdatePublishState) {
+      updatePayload.status = nextIsPublished ? "published" : "draft";
+      updatePayload.published_at = publishedAt;
+    }
 
-        if (shouldUpdatePublishState) {
-          updatePayload.status = nextIsPublished ? "published" : "draft";
-          updatePayload.published_at = publishedAt;
-        }
+    const { data: updated, error: updateError } = await supabase
+      .from("map_apps")
+      .update(updatePayload)
+      .eq("id", app.id)
+      .eq("owner_id", user.id)
+      .eq("app_type", "map_tour")
+      .select("*")
+      .single();
 
-        const { data: updated, error: updateError } = await supabase
-          .from("map_apps")
-          .update(updatePayload)
-          .eq("id", app.id)
-          .eq("owner_id", user.id)
-          .select("*")
-          .single();
-
-        if (updateError || !updated) {
-          setSaveState("error");
-          setError(updateError?.message || "Map tour changes could not be saved.");
-          return false;
-        }
-
-        setApp(updated);
-        setTitle(updated.title);
-        setDescription(updated.description || "");
-        setIsPublished(updated.status === "published");
-        setSaveState("saved");
-        setDirty(false);
-        if (!silent) {
-          setMessage("Map tour changes saved.");
-        }
-        return true;
-      }
-
+    if (updateError || !updated) {
       setSaveState("error");
-      setError(payload.error || "Map tour changes could not be saved.");
+      setError(updateError?.message || "Map tour changes could not be saved.");
       return false;
     }
 
-    setApp(payload.app);
-    setTitle(payload.app.title);
-    setDescription(payload.app.description || "");
-    setIsPublished(payload.app.status === "published");
+    setApp(updated);
+    setTitle(updated.title);
+    setDescription(updated.description || "");
+    setIsPublished(updated.status === "published");
     setSaveState("saved");
     setDirty(false);
     if (!silent) {
