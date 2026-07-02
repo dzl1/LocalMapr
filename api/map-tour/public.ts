@@ -1,13 +1,44 @@
-import {
-  getAdminClient,
-  sendJson,
-  type ApiRequest,
-  type ApiResponse,
-} from "../_utils";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { createClient } from "@supabase/supabase-js";
+
+type ApiRequest = IncomingMessage & {
+  method?: string;
+  headers: IncomingMessage["headers"];
+};
+
+function sendJson(
+  response: ServerResponse,
+  statusCode: number,
+  payload: unknown,
+) {
+  response.statusCode = statusCode;
+  response.setHeader("Content-Type", "application/json");
+  response.end(JSON.stringify(payload));
+}
+
+function getSupabaseAdminConfig() {
+  const url = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.SUPABASE_SERVICE_KEY ??
+    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceRoleKey) {
+    return null;
+  }
+
+  try {
+    new URL(url);
+  } catch {
+    return null;
+  }
+
+  return { serviceRoleKey, url };
+}
 
 export default async function handler(
   request: ApiRequest,
-  response: ApiResponse,
+  response: ServerResponse,
 ) {
   if (request.method !== "GET") {
     sendJson(response, 405, { error: "Method not allowed." });
@@ -25,12 +56,21 @@ export default async function handler(
     return;
   }
 
-  const { supabase, error: supabaseError } = getAdminClient();
+  const config = getSupabaseAdminConfig();
 
-  if (supabaseError || !supabase) {
-    sendJson(response, 500, { error: supabaseError });
+  if (!config) {
+    sendJson(response, 500, {
+      error: "Supabase admin is not configured for public map tours.",
+    });
     return;
   }
+
+  const supabase = createClient(config.url, config.serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 
   const { data, error } = await supabase
     .from("map_apps")
