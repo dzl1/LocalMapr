@@ -1,11 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createClient } from "@supabase/supabase-js";
-import {
-  EMAIL_VERIFICATION_REQUIRED_MESSAGE,
-  isUserEmailVerified,
-} from "../src/lib/auth";
-import { getAppBaseUrl, getSupabaseConfig } from "../src/lib/config";
-import { createSupabaseAdminClient } from "../src/lib/supabase/admin";
+import Stripe from "stripe";
 import type { Database } from "../src/lib/database.types";
 
 export type ApiRequest = IncomingMessage & {
@@ -14,6 +9,19 @@ export type ApiRequest = IncomingMessage & {
 };
 
 export type ApiResponse = ServerResponse;
+
+const EMAIL_VERIFICATION_REQUIRED_MESSAGE =
+  "Please verify your email before signing in. Check your inbox for the confirmation link.";
+
+type EmailVerificationUser = {
+  confirmed_at?: string | null;
+  email?: string | null;
+  email_confirmed_at?: string | null;
+};
+
+function isUserEmailVerified(user?: EmailVerificationUser | null) {
+  return Boolean(user?.email && (user.email_confirmed_at || user.confirmed_at));
+}
 
 export function sendJson(
   response: ApiResponse,
@@ -27,6 +35,106 @@ export function sendJson(
 
 export function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback;
+}
+
+export function getAppBaseUrl(requestUrl?: string) {
+  const configuredUrl = process.env.VITE_APP_URL;
+
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/$/, "");
+  }
+
+  if (requestUrl) {
+    const url = new URL(requestUrl);
+    return url.origin;
+  }
+
+  return "http://localhost:3000";
+}
+
+export function getSupabaseConfig() {
+  const url = process.env.VITE_SUPABASE_URL;
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    return null;
+  }
+
+  try {
+    new URL(url);
+  } catch {
+    return null;
+  }
+
+  return { anonKey, url };
+}
+
+export function getSupabaseAdminConfig() {
+  const publicConfig = getSupabaseConfig();
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.SUPABASE_SERVICE_KEY ??
+    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!publicConfig || !serviceRoleKey) {
+    return null;
+  }
+
+  return { ...publicConfig, serviceRoleKey };
+}
+
+export function createSupabaseAdminClient() {
+  const config = getSupabaseAdminConfig();
+
+  if (!config) {
+    return null;
+  }
+
+  return createClient<Database>(config.url, config.serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+function getStripeSecretKey() {
+  return process.env.STRIPE_SECRET_KEY ?? null;
+}
+
+export function getStripeConfig() {
+  const secretKey = getStripeSecretKey();
+  const priceId = process.env.STRIPE_PRO_PRICE_ID;
+
+  if (!secretKey || !priceId) {
+    return null;
+  }
+
+  return { priceId, secretKey };
+}
+
+export function getMapTourStripeConfig() {
+  const secretKey = getStripeSecretKey();
+  const tourCreditPriceId = process.env.STRIPE_MAP_TOUR_CREDIT_PRICE_ID;
+  const pointUpgradePriceId = process.env.STRIPE_MAP_POINT_UPGRADE_PRICE_ID;
+
+  if (!secretKey || !tourCreditPriceId || !pointUpgradePriceId) {
+    return null;
+  }
+
+  return { pointUpgradePriceId, secretKey, tourCreditPriceId };
+}
+
+export function createStripeClient() {
+  const secretKey = getStripeSecretKey();
+
+  if (!secretKey) {
+    return null;
+  }
+
+  return new Stripe(secretKey, {
+    apiVersion: "2026-05-27.dahlia",
+  });
 }
 
 export function getRequestOrigin(request: ApiRequest) {

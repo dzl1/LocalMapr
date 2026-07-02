@@ -1,8 +1,8 @@
 import Stripe from "stripe";
 import type { Json } from "../../src/lib/database.types";
-import { createSupabaseAdminClient } from "../../src/lib/supabase/admin";
-import { createStripeClient } from "../../src/lib/stripe";
 import {
+  createStripeClient,
+  createSupabaseAdminClient,
   readRawBody,
   sendJson,
   type ApiRequest,
