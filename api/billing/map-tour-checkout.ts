@@ -1,6 +1,7 @@
 import { getMapTourStripeConfig } from "../../src/lib/config";
 import { createStripeClient } from "../../src/lib/stripe";
 import {
+  errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   getRequestOrigin,
@@ -88,12 +89,21 @@ export default async function handler(
   let customerId = profile?.stripe_customer_id ?? null;
 
   if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email ?? undefined,
-      metadata: {
-        supabase_user_id: user.id,
-      },
-    });
+    let customer;
+
+    try {
+      customer = await stripe.customers.create({
+        email: user.email ?? undefined,
+        metadata: {
+          supabase_user_id: user.id,
+        },
+      });
+    } catch (error) {
+      sendJson(response, 502, {
+        error: errorMessage(error, "Stripe customer could not be created."),
+      });
+      return;
+    }
 
     customerId = customer.id;
 
@@ -109,27 +119,37 @@ export default async function handler(
       ? stripeConfig.tourCreditPriceId
       : stripeConfig.pointUpgradePriceId;
 
-  const session = await stripe.checkout.sessions.create({
-    allow_promotion_codes: true,
-    cancel_url: `${baseUrl}/dashboard?checkout=cancelled`,
-    customer: customerId,
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
+  let session;
+
+  try {
+    session = await stripe.checkout.sessions.create({
+      allow_promotion_codes: true,
+      cancel_url: `${baseUrl}/dashboard?checkout=cancelled`,
+      customer: customerId,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        credit_type: creditType,
+        credit_unit_points: creditType === "points" ? "100" : "",
+        map_app_id: mapAppId ?? "",
+        supabase_user_id: user.id,
       },
-    ],
-    metadata: {
-      credit_type: creditType,
-      map_app_id: mapAppId ?? "",
-      supabase_user_id: user.id,
-    },
-    mode: "payment",
-    success_url:
-      creditType === "points" && mapAppId
-        ? `${baseUrl}/map-tour/${encodeURIComponent(mapAppId)}?checkout=success&credit=points`
-        : `${baseUrl}/dashboard?checkout=success&credit=tour`,
-  });
+      mode: "payment",
+      success_url:
+        creditType === "points" && mapAppId
+          ? `${baseUrl}/map-tour/${encodeURIComponent(mapAppId)}?checkout=success&credit=points`
+          : `${baseUrl}/dashboard?checkout=success&credit=tour`,
+    });
+  } catch (error) {
+    sendJson(response, 502, {
+      error: errorMessage(error, "Stripe checkout could not be started."),
+    });
+    return;
+  }
 
   if (!session.url) {
     sendJson(response, 500, { error: "Checkout session is missing a URL." });

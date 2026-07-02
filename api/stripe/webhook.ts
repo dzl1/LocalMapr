@@ -191,7 +191,7 @@ async function syncCheckoutSession(session: Stripe.Checkout.Session) {
       {
         credit_type: creditType,
         map_app_id: creditType === "points" ? mapAppId : null,
-        status: session.payment_status || "completed",
+        status: session.payment_status || session.status || "pending",
         stripe_checkout_session_id: session.id,
         stripe_payment_intent_id: paymentIntentId,
         user_id: userId,
@@ -241,6 +241,7 @@ export default async function handler(
 
   switch (event.type) {
     case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded":
       await syncCheckoutSession(event.data.object);
       break;
     case "customer.subscription.created":

@@ -3,6 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import {
+  EMAIL_VERIFICATION_REQUIRED_MESSAGE,
+  isUserEmailVerified,
+} from "@/lib/auth";
+import {
   createBrowserSupabaseClient,
   getSupabaseBrowserConfig,
 } from "@/lib/supabase/client";
@@ -55,6 +59,15 @@ export function AdminPage() {
 
       if (!currentUser?.email) {
         navigate("/login?next=/admin", { replace: true });
+        return;
+      }
+
+      if (!isUserEmailVerified(currentUser)) {
+        await supabase.auth.signOut();
+        navigate(
+          `/login?error=${encodeURIComponent(EMAIL_VERIFICATION_REQUIRED_MESSAGE)}`,
+          { replace: true },
+        );
         return;
       }
 

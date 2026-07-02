@@ -1,5 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createClient } from "@supabase/supabase-js";
+import {
+  EMAIL_VERIFICATION_REQUIRED_MESSAGE,
+  isUserEmailVerified,
+} from "../src/lib/auth";
 import { getAppBaseUrl, getSupabaseConfig } from "../src/lib/config";
 import { createSupabaseAdminClient } from "../src/lib/supabase/admin";
 import type { Database } from "../src/lib/database.types";
@@ -19,6 +23,10 @@ export function sendJson(
   response.statusCode = statusCode;
   response.setHeader("Content-Type", "application/json");
   response.end(JSON.stringify(payload));
+}
+
+export function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback;
 }
 
 export function getRequestOrigin(request: ApiRequest) {
@@ -63,6 +71,10 @@ export async function getAuthenticatedUser(request: ApiRequest) {
 
   if (error || !data.user) {
     return { error: error?.message ?? "Authentication is required.", user: null };
+  }
+
+  if (!isUserEmailVerified(data.user)) {
+    return { error: EMAIL_VERIFICATION_REQUIRED_MESSAGE, user: null };
   }
 
   return { error: null, user: data.user };

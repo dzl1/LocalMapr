@@ -1,6 +1,7 @@
 import { getStripeConfig } from "../../src/lib/config";
 import { createStripeClient } from "../../src/lib/stripe";
 import {
+  errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   getRequestOrigin,
@@ -49,12 +50,21 @@ export default async function handler(
   let customerId = profile?.stripe_customer_id ?? null;
 
   if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email ?? undefined,
-      metadata: {
-        supabase_user_id: user.id,
-      },
-    });
+    let customer;
+
+    try {
+      customer = await stripe.customers.create({
+        email: user.email ?? undefined,
+        metadata: {
+          supabase_user_id: user.id,
+        },
+      });
+    } catch (error) {
+      sendJson(response, 502, {
+        error: errorMessage(error, "Stripe customer could not be created."),
+      });
+      return;
+    }
 
     customerId = customer.id;
 
@@ -65,27 +75,36 @@ export default async function handler(
     });
   }
 
-  const session = await stripe.checkout.sessions.create({
-    allow_promotion_codes: true,
-    cancel_url: `${baseUrl}/dashboard?checkout=cancelled`,
-    customer: customerId,
-    line_items: [
-      {
-        price: stripeConfig.priceId,
-        quantity: 1,
-      },
-    ],
-    metadata: {
-      supabase_user_id: user.id,
-    },
-    mode: "subscription",
-    subscription_data: {
+  let session;
+
+  try {
+    session = await stripe.checkout.sessions.create({
+      allow_promotion_codes: true,
+      cancel_url: `${baseUrl}/dashboard?checkout=cancelled`,
+      customer: customerId,
+      line_items: [
+        {
+          price: stripeConfig.priceId,
+          quantity: 1,
+        },
+      ],
       metadata: {
         supabase_user_id: user.id,
       },
-    },
-    success_url: `${baseUrl}/dashboard?checkout=success`,
-  });
+      mode: "subscription",
+      subscription_data: {
+        metadata: {
+          supabase_user_id: user.id,
+        },
+      },
+      success_url: `${baseUrl}/dashboard?checkout=success`,
+    });
+  } catch (error) {
+    sendJson(response, 502, {
+      error: errorMessage(error, "Stripe checkout could not be started."),
+    });
+    return;
+  }
 
   if (!session.url) {
     sendJson(response, 500, { error: "Checkout session is missing a URL." });

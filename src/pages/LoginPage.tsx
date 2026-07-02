@@ -4,6 +4,10 @@ import {
   createBrowserSupabaseClient,
   getSupabaseBrowserConfig,
 } from "@/lib/supabase/client";
+import {
+  EMAIL_VERIFICATION_REQUIRED_MESSAGE,
+  isUserEmailVerified,
+} from "@/lib/auth";
 import styles from "@/app/login/login.module.css";
 
 type Mode = "login" | "signup";
@@ -12,7 +16,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(searchParams.get("error") ?? "");
   const [pending, setPending] = useState(false);
   const isConfigured = Boolean(getSupabaseBrowserConfig());
   const next = searchParams.get("next") ?? "/dashboard";
@@ -25,10 +29,18 @@ export function LoginPage() {
     }
 
     const supabase = createBrowserSupabaseClient();
-    void supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        navigate(next, { replace: true });
+    void supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) {
+        return;
       }
+
+      if (!isUserEmailVerified(data.user)) {
+        await supabase.auth.signOut();
+        setMessage(EMAIL_VERIFICATION_REQUIRED_MESSAGE);
+        return;
+      }
+
+      navigate(next, { replace: true });
     });
   }, [isConfigured, navigate, next]);
 
@@ -60,8 +72,13 @@ export function LoginPage() {
       return;
     }
 
-    if (mode === "signup" && !result.data.session) {
-      setMessage("Check your email to confirm your account, then log in.");
+    if (!isUserEmailVerified(result.data.user)) {
+      await supabase.auth.signOut();
+      setMessage(
+        mode === "signup"
+          ? "Check your email to confirm your account, then log in."
+          : EMAIL_VERIFICATION_REQUIRED_MESSAGE,
+      );
       return;
     }
 

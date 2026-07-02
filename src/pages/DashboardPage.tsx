@@ -1,19 +1,26 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
+import { readApiResponse } from "@/lib/api";
 import type { Database } from "@/lib/database.types";
 import {
   createBrowserSupabaseClient,
   getSupabaseBrowserConfig,
 } from "@/lib/supabase/client";
+import {
+  EMAIL_VERIFICATION_REQUIRED_MESSAGE,
+  isUserEmailVerified,
+} from "@/lib/auth";
+import {
+  FREE_MAP_TOUR_LIMIT,
+  getUnusedTourCreditCount,
+} from "@/lib/mapTourBilling";
 import styles from "@/app/dashboard/dashboard.module.css";
 
 type MapApp = Database["public"]["Tables"]["map_apps"]["Row"];
 type MapTourPurchase =
   Database["public"]["Tables"]["map_tour_purchases"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-
-const freeMapTourLimit = 1;
 
 const appTypeLabels: Record<string, string> = {
   field_app: "Field app",
@@ -59,13 +66,49 @@ async function startBillingFlow(path: string, body?: Record<string, unknown>) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  const payload = (await response.json()) as { error?: string; url?: string };
+  const payload = await readApiResponse<{ error?: string; url?: string }>(
+    response,
+    "Billing could not be started.",
+  );
 
   if (!response.ok || !payload.url) {
     throw new Error(payload.error ?? "Billing could not be started.");
   }
 
   window.location.href = payload.url;
+}
+
+async function createMapTourDraft(body: {
+  description: string;
+  title: string;
+}) {
+  const supabase = createBrowserSupabaseClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error("Please log in again before creating a Map Tour.");
+  }
+
+  const response = await fetch("/api/map-tour/create", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  const payload = await readApiResponse<{
+    app?: MapApp;
+    error?: string;
+  }>(response, "Map Tour could not be created.");
+
+  if (!response.ok || !payload.app) {
+    throw new Error(payload.error ?? "Map Tour could not be created.");
+  }
+
+  return payload.app;
 }
 
 export function DashboardPage() {
@@ -97,6 +140,15 @@ export function DashboardPage() {
 
     if (!currentUser) {
       navigate("/login?next=/dashboard", { replace: true });
+      return;
+    }
+
+    if (!isUserEmailVerified(currentUser)) {
+      await supabase.auth.signOut();
+      navigate(
+        `/login?error=${encodeURIComponent(EMAIL_VERIFICATION_REQUIRED_MESSAGE)}`,
+        { replace: true },
+      );
       return;
     }
 
@@ -175,25 +227,42 @@ export function DashboardPage() {
     }
 
     const mapTourApps = apps.filter((app) => app.app_type === "map_tour");
-    const unusedTourCredits = purchases.filter(
-      (purchase) => purchase.credit_type === "tour" && !purchase.used_at,
-    );
+    const unusedTourCredits = getUnusedTourCreditCount(purchases);
 
     if (
       appType === "map_tour" &&
       !isAdmin &&
-      mapTourApps.length >= freeMapTourLimit &&
-      unusedTourCredits.length < 1
+      mapTourApps.length >= FREE_MAP_TOUR_LIMIT &&
+      unusedTourCredits < 1
     ) {
       setError(
-        "Your free Map Tour is already used. Buy a tour credit to create another.",
+        "Your free Map Tours are already used. Buy a tour credit to create another.",
       );
       setCreating(false);
       return;
     }
 
+    if (appType === "map_tour") {
+      try {
+        await createMapTourDraft({ description, title });
+        event.currentTarget.reset();
+        setCreateType("map_tour");
+        setMessage("Draft map app created.");
+        setCreating(false);
+        await loadDashboard();
+      } catch (createError) {
+        setError(
+          createError instanceof Error
+            ? createError.message
+            : "Map Tour could not be created.",
+        );
+        setCreating(false);
+      }
+      return;
+    }
+
     const slug = `${slugify(title)}-${crypto.randomUUID().slice(0, 8)}`;
-    const { data: insertedApp, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from("map_apps")
       .insert({
         app_type: appType,
@@ -209,28 +278,6 @@ export function DashboardPage() {
       setError(insertError.message);
       setCreating(false);
       return;
-    }
-
-    if (
-      insertedApp &&
-      appType === "map_tour" &&
-      !isAdmin &&
-      mapTourApps.length >= freeMapTourLimit &&
-      unusedTourCredits[0]
-    ) {
-      const { error: consumeError } = await supabase
-        .from("map_tour_purchases")
-        .update({
-          used_at: new Date().toISOString(),
-          used_for_app_id: insertedApp.id,
-        })
-        .eq("id", unusedTourCredits[0].id)
-        .eq("user_id", user.id)
-        .is("used_at", null);
-
-      if (consumeError) {
-        setError(consumeError.message);
-      }
     }
 
     event.currentTarget.reset();
@@ -312,9 +359,7 @@ export function DashboardPage() {
     planStatus === "trialing" ||
     planStatus === "past_due";
   const mapTourApps = apps.filter((app) => app.app_type === "map_tour");
-  const unusedTourCredits = purchases.filter(
-    (purchase) => purchase.credit_type === "tour" && !purchase.used_at,
-  ).length;
+  const unusedTourCredits = getUnusedTourCreditCount(purchases);
 
   return (
     <main className={styles.page}>
@@ -372,7 +417,7 @@ export function DashboardPage() {
                 : "Upgrade"}
           </button>
           <small>
-            Map Tour credits: {unusedTourCredits} available. Free Map Tours: {Math.max(0, freeMapTourLimit - mapTourApps.length)} remaining.
+            Map Tour credits: {unusedTourCredits} available. Free Map Tours: {Math.max(0, FREE_MAP_TOUR_LIMIT - mapTourApps.length)} remaining.
           </small>
         </div>
       </section>
@@ -420,7 +465,7 @@ export function DashboardPage() {
           </button>
           {createType === "map_tour" &&
           !isAdmin &&
-          mapTourApps.length >= freeMapTourLimit &&
+          mapTourApps.length >= FREE_MAP_TOUR_LIMIT &&
           unusedTourCredits < 1 ? (
             <button
               type="button"

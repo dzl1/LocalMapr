@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
+import { isUserEmailVerified } from "@/lib/auth";
 import {
   createBrowserSupabaseClient,
   getSupabaseBrowserConfig,
@@ -51,7 +52,15 @@ export function HomePage() {
     }
 
     const supabase = createBrowserSupabaseClient();
-    void supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    void supabase.auth.getUser().then(async ({ data }) => {
+      if (data.user && !isUserEmailVerified(data.user)) {
+        await supabase.auth.signOut();
+        setUser(null);
+        return;
+      }
+
+      setUser(data.user);
+    });
   }, []);
 
   const workspaceHref = user ? "/dashboard" : "/login";

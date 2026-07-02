@@ -259,3 +259,145 @@ on public.billing_events (created_at desc);
 
 create index if not exists billing_events_customer_idx
 on public.billing_events (stripe_customer_id);
+
+create or replace function public.is_super_admin_user(user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles profile
+    join public.super_admins admin
+      on lower(admin.email) = lower(coalesce(profile.email, ''))
+    where profile.id = user_id
+      and admin.is_active = true
+  );
+$$;
+
+create or replace function public.is_paid_map_tour_credit(status text)
+returns boolean
+language sql
+immutable
+as $$
+  select status in ('paid', 'completed');
+$$;
+
+create or replace function public.enforce_map_tour_point_limits()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  point_count integer;
+  point_credit_count integer;
+  point_limit integer;
+  user_is_admin boolean;
+begin
+  if new.app_type <> 'map_tour' then
+    return new;
+  end if;
+
+  user_is_admin := public.is_super_admin_user(new.owner_id);
+
+  if jsonb_typeof(coalesce(new.config, '{}'::jsonb)->'cards') = 'array' then
+    point_count := jsonb_array_length(new.config->'cards');
+  else
+    point_count := 0;
+  end if;
+
+  if not user_is_admin then
+    select count(*)
+    into point_credit_count
+    from public.map_tour_purchases
+    where user_id = new.owner_id
+      and public.is_paid_map_tour_credit(status)
+      and (
+        (credit_type = 'points' and map_app_id = new.id)
+        or (credit_type = 'tour' and used_for_app_id = new.id)
+      );
+
+    if point_credit_count > 0 then
+      point_limit := point_credit_count * 100;
+    else
+      point_limit := 4;
+    end if;
+
+    if point_count > point_limit then
+      raise exception 'This Map Tour has % points available. Buy another $1 point credit to add more.', point_limit;
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+create or replace function public.consume_map_tour_creation_credit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  existing_tour_count integer;
+  tour_credit_id uuid;
+  user_is_admin boolean;
+begin
+  if new.app_type <> 'map_tour' then
+    return new;
+  end if;
+
+  user_is_admin := public.is_super_admin_user(new.owner_id);
+
+  if user_is_admin then
+    return new;
+  end if;
+
+  select count(*)
+  into existing_tour_count
+  from public.map_apps
+  where owner_id = new.owner_id
+    and app_type = 'map_tour';
+
+  if existing_tour_count <= 2 then
+    return new;
+  end if;
+
+  select id
+  into tour_credit_id
+  from public.map_tour_purchases
+  where user_id = new.owner_id
+    and credit_type = 'tour'
+    and used_at is null
+    and public.is_paid_map_tour_credit(status)
+  order by created_at asc
+  limit 1
+  for update skip locked;
+
+  if tour_credit_id is null then
+    raise exception 'Your 2 free Map Tours are used. Buy a $1 tour credit to create another.';
+  end if;
+
+  update public.map_tour_purchases
+  set used_at = now(),
+      used_for_app_id = new.id
+  where id = tour_credit_id;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists map_tour_billing_limits on public.map_apps;
+drop function if exists public.enforce_map_tour_billing_limits();
+drop trigger if exists map_tour_point_limits on public.map_apps;
+create trigger map_tour_point_limits
+before insert or update on public.map_apps
+for each row execute function public.enforce_map_tour_point_limits();
+
+drop trigger if exists map_tour_creation_credit on public.map_apps;
+create trigger map_tour_creation_credit
+after insert on public.map_apps
+for each row execute function public.consume_map_tour_creation_credit();

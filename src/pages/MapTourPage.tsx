@@ -12,7 +12,21 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import type { User } from "@supabase/supabase-js";
+import { readApiResponse } from "@/lib/api";
 import type { Database, Json } from "@/lib/database.types";
+import {
+  EMAIL_VERIFICATION_REQUIRED_MESSAGE,
+  isUserEmailVerified,
+} from "@/lib/auth";
+import {
+  FREE_MAP_TOUR_LIMIT,
+  FREE_MAP_TOUR_POINT_LIMIT,
+  getMapTourPointLimit,
+  getPointCreditCount,
+  getUnusedTourCreditCount,
+  MAP_TOUR_CREDIT_PRICE_LABEL,
+  PAID_MAP_TOUR_POINT_BLOCK,
+} from "@/lib/mapTourBilling";
 import {
   createBrowserSupabaseClient,
   getSupabaseBrowserConfig,
@@ -21,7 +35,6 @@ import "leaflet/dist/leaflet.css";
 import styles from "@/app/maptour/maptour.module.css";
 
 type MapApp = Database["public"]["Tables"]["map_apps"]["Row"];
-type MapAppUpdate = Database["public"]["Tables"]["map_apps"]["Update"];
 type MapTourPurchase =
   Database["public"]["Tables"]["map_tour_purchases"]["Row"];
 
@@ -46,8 +59,6 @@ type TourConfig = {
 const defaultCenter: [number, number] = [-35.205, 173.95];
 const defaultZoom = 11;
 const colors = ["#1f4834", "#2563eb", "#be123c", "#b45309", "#6d28d9"];
-const freePointLimit = 3;
-const paidPointLimit = 10;
 
 function createCard(index: number, lat = defaultCenter[0], lng = defaultCenter[1]): TourCard {
   return {
@@ -384,20 +395,11 @@ export function MapTourPage() {
     () => cards.find((card) => card.id === selectedCardId) || null,
     [cards, selectedCardId],
   );
-  const hasPointUpgrade = useMemo(
-    () =>
-      isAdmin ||
-      Boolean(
-        purchases.find(
-          (purchase) =>
-            purchase.credit_type === "points" &&
-            purchase.map_app_id === app?.id &&
-            (purchase.status === "paid" || purchase.status === "completed"),
-        ),
-      ),
-    [app?.id, isAdmin, purchases],
+  const pointCreditCount = useMemo(
+    () => getPointCreditCount(purchases, app?.id),
+    [app?.id, purchases],
   );
-  const selectedPointLimit = hasPointUpgrade ? paidPointLimit : freePointLimit;
+  const selectedPointLimit = getMapTourPointLimit(pointCreditCount, isAdmin);
   const { publicUrl, embedUrl, embedCode } = app?.slug
     ? getShareUrls(app.slug)
     : { embedCode: "", embedUrl: "", publicUrl: "" };
@@ -469,6 +471,15 @@ export function MapTourPage() {
 
       if (!currentUser) {
         navigate("/login?next=/map-tour", { replace: true });
+        return;
+      }
+
+      if (!isUserEmailVerified(currentUser)) {
+        await supabase.auth.signOut();
+        navigate(
+          `/login?error=${encodeURIComponent(EMAIL_VERIFICATION_REQUIRED_MESSAGE)}`,
+          { replace: true },
+        );
         return;
       }
 
@@ -642,13 +653,12 @@ export function MapTourPage() {
   }
 
   function addCard(lat: number, lng: number) {
-    if (!hasPointUpgrade && cards.length >= freePointLimit) {
-      setError("Free Map Tours include up to 3 points. Upgrade to unlock 10.");
-      return;
-    }
-
-    if (hasPointUpgrade && cards.length >= paidPointLimit) {
-      setError("This Map Tour has reached the 10 point limit.");
+    if (!isAdmin && cards.length >= selectedPointLimit) {
+      setError(
+        pointCreditCount > 0
+          ? `This Map Tour has reached ${selectedPointLimit} points. Buy another ${MAP_TOUR_CREDIT_PRICE_LABEL} point credit to unlock the next ${PAID_MAP_TOUR_POINT_BLOCK}.`
+          : `Free Map Tours include up to ${FREE_MAP_TOUR_POINT_LIMIT} points. Buy a ${MAP_TOUR_CREDIT_PRICE_LABEL} point credit to unlock ${PAID_MAP_TOUR_POINT_BLOCK}.`,
+      );
       return;
     }
 
@@ -892,48 +902,47 @@ export function MapTourPage() {
     };
     const shouldUpdatePublishState = typeof overrides.isPublished === "boolean";
     const nextIsPublished = overrides.isPublished ?? isPublished;
-    const publishedAt = nextIsPublished ? new Date().toISOString() : null;
     const nextConfig = serializeConfig(config);
-    const updatePayload: MapAppUpdate = {
-      title: title.trim() || "Untitled map tour",
-      description: description.trim() || null,
-      config: nextConfig,
-    };
-
-    if (shouldUpdatePublishState) {
-      updatePayload.status = nextIsPublished ? "published" : "draft";
-      updatePayload.published_at = publishedAt;
-    }
-
     const supabase = createBrowserSupabaseClient();
-    const { error: updateError } = await supabase
-      .from("map_apps")
-      .update(updatePayload)
-      .eq("id", app.id)
-      .eq("owner_id", user.id);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (updateError) {
+    if (!session?.access_token) {
       setSaveState("error");
-      setError(updateError.message);
+      setError("Please log in again before saving this Map Tour.");
       return false;
     }
 
-    setApp((current) =>
-      current
-        ? {
-            ...current,
-            config: nextConfig,
-            description: description.trim() || null,
-            published_at: shouldUpdatePublishState ? publishedAt : current.published_at,
-            status: shouldUpdatePublishState
-              ? nextIsPublished
-                ? "published"
-                : "draft"
-              : current.status,
-            title: title.trim() || "Untitled map tour",
-          }
-        : current,
-    );
+    const response = await fetch("/api/map-tour/save", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        appId: app.id,
+        config: nextConfig,
+        description,
+        ...(shouldUpdatePublishState ? { isPublished: nextIsPublished } : {}),
+        title,
+      }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as {
+      app?: MapApp;
+      error?: string;
+    };
+
+    if (!response.ok || !payload.app) {
+      setSaveState("error");
+      setError(payload.error || "Map tour changes could not be saved.");
+      return false;
+    }
+
+    setApp(payload.app);
+    setTitle(payload.app.title);
+    setDescription(payload.app.description || "");
+    setIsPublished(payload.app.status === "published");
     setSaveState("saved");
     setDirty(false);
     if (!silent) {
@@ -991,7 +1000,10 @@ export function MapTourPage() {
           mapAppId: app.id,
         }),
       });
-      const payload = (await response.json()) as { error?: string; url?: string };
+      const payload = await readApiResponse<{ error?: string; url?: string }>(
+        response,
+        "Could not open point upgrade checkout.",
+      );
 
       if (!response.ok || !payload.url) {
         throw new Error(payload.error || "Could not open point upgrade checkout.");
@@ -1035,7 +1047,10 @@ export function MapTourPage() {
         },
         body: JSON.stringify({ creditType: "tour" }),
       });
-      const payload = (await response.json()) as { error?: string; url?: string };
+      const payload = await readApiResponse<{ error?: string; url?: string }>(
+        response,
+        "Could not open tour credit checkout.",
+      );
 
       if (!response.ok || !payload.url) {
         throw new Error(payload.error || "Could not open tour credit checkout.");
@@ -1058,53 +1073,51 @@ export function MapTourPage() {
       return;
     }
 
-    const unusedTourCredits = purchases.filter(
-      (purchase) => purchase.credit_type === "tour" && !purchase.used_at,
-    );
+    const unusedTourCredits = getUnusedTourCreditCount(purchases);
     const canCreate =
-      isAdmin || allTours.length < 1 || Boolean(unusedTourCredits[0]);
+      isAdmin || allTours.length < FREE_MAP_TOUR_LIMIT || unusedTourCredits > 0;
 
     if (!canCreate) {
-      setError("Your free Map Tour is used. Buy a tour credit to create another.");
+      setError("Your free Map Tours are used. Buy a tour credit to create another.");
       return;
     }
 
     const supabase = createBrowserSupabaseClient();
-    const slugBase = `map-tour-${Date.now()}`;
-    const { data: inserted, error: insertError } = await supabase
-      .from("map_apps")
-      .insert({
-        app_type: "map_tour",
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      setError("Please log in again before creating a Map Tour.");
+      return;
+    }
+
+    const response = await fetch("/api/map-tour/create", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
         config: serializeConfig({
           cards: [createCard(0)],
           center: defaultCenter,
           zoom: defaultZoom,
         }),
-        owner_id: user.id,
-        slug: `${slugBase}-${crypto.randomUUID().slice(0, 8)}`,
         title: `Map Tour ${allTours.length + 1}`,
-      })
-      .select("id")
-      .single();
+      }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as {
+      app?: MapApp;
+      error?: string;
+    };
 
-    if (insertError || !inserted) {
-      setError(insertError?.message || "Could not create Map Tour.");
+    if (!response.ok || !payload.app) {
+      setError(payload.error || "Could not create Map Tour.");
       return;
     }
 
-    if (!isAdmin && allTours.length >= 1 && unusedTourCredits[0]) {
-      await supabase
-        .from("map_tour_purchases")
-        .update({
-          used_at: new Date().toISOString(),
-          used_for_app_id: inserted.id,
-        })
-        .eq("id", unusedTourCredits[0].id)
-        .eq("user_id", user.id)
-        .is("used_at", null);
-    }
-
-    navigate(`/map-tour/${inserted.id}`);
+    navigate(`/map-tour/${payload.app.id}`);
   }
 
   if (loading) {
@@ -1130,10 +1143,9 @@ export function MapTourPage() {
   }
 
   if (isListMode) {
-    const unusedTourCredits = purchases.filter(
-      (purchase) => purchase.credit_type === "tour" && !purchase.used_at,
-    ).length;
-    const canCreateTour = isAdmin || allTours.length < 1 || unusedTourCredits > 0;
+    const unusedTourCredits = getUnusedTourCreditCount(purchases);
+    const canCreateTour =
+      isAdmin || allTours.length < FREE_MAP_TOUR_LIMIT || unusedTourCredits > 0;
 
     return (
       <main className={styles.homePage}>
@@ -1164,14 +1176,14 @@ export function MapTourPage() {
             <strong>
               {isAdmin
                 ? "Unlimited"
-                : allTours.length
+                : allTours.length >= FREE_MAP_TOUR_LIMIT
                   ? `${unusedTourCredits} tour credits`
-                  : "Free tour available"}
+                  : `${Math.max(0, FREE_MAP_TOUR_LIMIT - allTours.length)} free tours`}
             </strong>
             <p>
               {isAdmin
                 ? "Super admins can create unlimited tours and points."
-                : `${Math.max(0, 1 - allTours.length)} free tours remaining. ${unusedTourCredits} paid tour credits available.`}
+                : `${Math.max(0, FREE_MAP_TOUR_LIMIT - allTours.length)} free tours remaining. ${unusedTourCredits} paid tour credits available.`}
             </p>
             <button type="button" onClick={() => void createTourFromList()} disabled={!canCreateTour}>
               Create Map Tour
@@ -1406,14 +1418,18 @@ export function MapTourPage() {
                   <span>
                     {cards.length}/{isAdmin ? "unlimited" : selectedPointLimit} points
                   </span>
-                  {!isAdmin && !hasPointUpgrade && cards.length >= freePointLimit ? (
+                  {!isAdmin && cards.length >= selectedPointLimit ? (
                     <button
                       type="button"
                       className={styles.linkButton}
                       onClick={() => void startPointUpgradeCheckout()}
                       disabled={upgradePending}
                     >
-                      {upgradePending ? "Opening..." : "Upgrade to 10"}
+                      {upgradePending
+                        ? "Opening..."
+                        : pointCreditCount > 0
+                          ? `Buy next ${PAID_MAP_TOUR_POINT_BLOCK}`
+                          : `Unlock ${PAID_MAP_TOUR_POINT_BLOCK}`}
                     </button>
                   ) : null}
                 </div>
@@ -1511,7 +1527,7 @@ export function MapTourPage() {
                   type="button"
                   className={cx(styles.addPointButton, isAdding && styles.addPointButtonActive)}
                   onClick={addCardFromButton}
-                  disabled={!isAdmin && cards.length >= paidPointLimit}
+                  disabled={!isAdmin && cards.length >= selectedPointLimit}
                   aria-label="Add point"
                   title="Add point"
                 >

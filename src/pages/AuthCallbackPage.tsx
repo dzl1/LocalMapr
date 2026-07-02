@@ -1,5 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  EMAIL_VERIFICATION_REQUIRED_MESSAGE,
+  isUserEmailVerified,
+} from "@/lib/auth";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import styles from "@/app/dashboard/dashboard.module.css";
 
@@ -22,6 +26,19 @@ export function AuthCallbackPage() {
           });
           return;
         }
+      }
+
+      const { data } = await supabase.auth.getUser();
+
+      if (!isUserEmailVerified(data.user)) {
+        await supabase.auth.signOut();
+        navigate(
+          `/login?error=${encodeURIComponent(EMAIL_VERIFICATION_REQUIRED_MESSAGE)}`,
+          {
+            replace: true,
+          },
+        );
+        return;
       }
 
       navigate(next, { replace: true });

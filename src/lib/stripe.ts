@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { getStripeSecretKey } from "@/lib/config";
+import { getStripeSecretKey } from "./config";
 
 export function createStripeClient() {
   const secretKey = getStripeSecretKey();

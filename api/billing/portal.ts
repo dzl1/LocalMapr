@@ -1,5 +1,6 @@
 import { createStripeClient } from "../../src/lib/stripe";
 import {
+  errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   getRequestOrigin,
@@ -49,10 +50,19 @@ export default async function handler(
     return;
   }
 
-  const portal = await stripe.billingPortal.sessions.create({
-    customer: profile.stripe_customer_id,
-    return_url: `${baseUrl}/dashboard`,
-  });
+  let portal;
+
+  try {
+    portal = await stripe.billingPortal.sessions.create({
+      customer: profile.stripe_customer_id,
+      return_url: `${baseUrl}/dashboard`,
+    });
+  } catch (error) {
+    sendJson(response, 502, {
+      error: errorMessage(error, "Stripe billing portal could not be opened."),
+    });
+    return;
+  }
 
   sendJson(response, 200, { url: portal.url });
 }
