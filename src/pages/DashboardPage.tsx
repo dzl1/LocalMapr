@@ -255,7 +255,8 @@ export function DashboardPage() {
     setMessage("");
 
     const supabase = createBrowserSupabaseClient();
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
     const appType = String(formData.get("app_type") ?? createType);
@@ -290,7 +291,7 @@ export function DashboardPage() {
     if (appType === "map_tour") {
       try {
         await createMapTourDraft({ description, title, userId: user.id });
-        event.currentTarget.reset();
+        form.reset();
         setCreateType("map_tour");
         setMessage("Draft map app created.");
         setCreating(false);
@@ -325,7 +326,7 @@ export function DashboardPage() {
       return;
     }
 
-    event.currentTarget.reset();
+    form.reset();
     setCreateType("map_tour");
     setMessage("Draft map app created.");
     setCreating(false);
