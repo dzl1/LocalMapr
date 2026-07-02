@@ -32,7 +32,10 @@ export function getSupabaseConfig() {
 
 export function getSupabaseAdminConfig() {
   const publicConfig = getSupabaseConfig();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.SUPABASE_SERVICE_KEY ??
+    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
   if (!publicConfig || !serviceRoleKey) {
     return null;

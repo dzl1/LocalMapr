@@ -190,6 +190,9 @@ create policy "Anyone can read published map apps"
 on public.map_apps for select
 using (status = 'published');
 
+grant usage on schema public to anon, authenticated;
+grant select on table public.map_apps to anon, authenticated;
+
 drop policy if exists "Users can create their own map apps" on public.map_apps;
 create policy "Users can create their own map apps"
 on public.map_apps for insert
