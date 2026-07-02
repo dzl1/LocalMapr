@@ -32,6 +32,15 @@ const appTypeLabels: Record<string, string> = {
   map_tour: "Map tour",
 };
 
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
+      <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+    </svg>
+  );
+}
+
 function formatStatus(status?: string | null) {
   if (!status || status === "free") {
     return "Free";
@@ -168,6 +177,7 @@ export function DashboardPage() {
   const [error, setError] = useState(searchParams.get("error") ?? "");
   const [creating, setCreating] = useState(false);
   const [billingPending, setBillingPending] = useState(false);
+  const [deletingAppId, setDeletingAppId] = useState<string | null>(null);
   const hasSupabase = Boolean(getSupabaseBrowserConfig());
 
   async function loadDashboard() {
@@ -373,6 +383,43 @@ export function DashboardPage() {
     }
   }
 
+  async function handleDeleteApp(app: MapApp) {
+    if (!user) {
+      navigate("/login?next=/dashboard");
+      return;
+    }
+
+    const appType = appTypeLabels[app.app_type] ?? "map app";
+    const confirmed = window.confirm(
+      `Delete "${app.title}"? This will permanently remove this ${appType} and its share link.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingAppId(app.id);
+    setError("");
+    setMessage("");
+
+    const supabase = createBrowserSupabaseClient();
+    const { error: deleteError } = await supabase
+      .from("map_apps")
+      .delete()
+      .eq("id", app.id)
+      .eq("owner_id", user.id);
+
+    if (deleteError) {
+      setError(deleteError.message || "Unable to delete map app.");
+      setDeletingAppId(null);
+      return;
+    }
+
+    setApps((current) => current.filter((item) => item.id !== app.id));
+    setMessage(`"${app.title}" deleted.`);
+    setDeletingAppId(null);
+  }
+
   if (!hasSupabase) {
     return (
       <main className={styles.page}>
@@ -556,6 +603,16 @@ export function DashboardPage() {
                   <div className={styles.appMeta}>
                     <strong>{formatStatus(app.status)}</strong>
                     <code>/{app.slug}</code>
+                    <button
+                      type="button"
+                      className={styles.deleteAppButton}
+                      onClick={() => void handleDeleteApp(app)}
+                      disabled={deletingAppId === app.id}
+                      aria-label={`Delete ${app.title}`}
+                      title="Delete app"
+                    >
+                      <TrashIcon />
+                    </button>
                   </div>
                 </article>
               ))}

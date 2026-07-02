@@ -89,6 +89,15 @@ function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
+      <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+    </svg>
+  );
+}
+
 function toNumber(value: unknown, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -373,6 +382,7 @@ export function MapTourPage() {
   const [isRailCollapsed, setIsRailCollapsed] = useState(false);
   const [isTourDetailsCollapsed, setIsTourDetailsCollapsed] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [deletingTourId, setDeletingTourId] = useState<string | null>(null);
   const [viewport, setViewport] = useState<{ center: [number, number]; zoom: number }>({
     center: defaultCenter,
     zoom: defaultZoom,
@@ -1193,6 +1203,43 @@ export function MapTourPage() {
     navigate(`/map-tour/${payload.app.id}`);
   }
 
+  async function deleteTourFromList(tour: MapApp) {
+    if (!user) {
+      navigate("/login?next=/map-tour", { replace: true });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete "${tour.title || "Map Tour"}"? This will permanently remove the Map Tour and its share link.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingTourId(tour.id);
+    setError("");
+    setMessage("");
+
+    const supabase = createBrowserSupabaseClient();
+    const { error: deleteError } = await supabase
+      .from("map_apps")
+      .delete()
+      .eq("id", tour.id)
+      .eq("owner_id", user.id)
+      .eq("app_type", "map_tour");
+
+    if (deleteError) {
+      setError(deleteError.message || "Unable to delete Map Tour.");
+      setDeletingTourId(null);
+      return;
+    }
+
+    setAllTours((current) => current.filter((item) => item.id !== tour.id));
+    setMessage(`"${tour.title}" deleted.`);
+    setDeletingTourId(null);
+  }
+
   if (loading) {
     return (
       <main className={styles.homePage}>
@@ -1287,20 +1334,31 @@ export function MapTourPage() {
               allTours.map((tour) => {
                 const config = parseConfig(tour.config);
                 return (
-                  <button
-                    type="button"
-                    key={tour.id}
-                    className={styles.row}
-                    onClick={() => navigate(`/map-tour/${tour.id}`)}
-                  >
-                    <span>
-                      <strong>{tour.title}</strong>
-                      <small>{tour.description || "No description"}</small>
-                    </span>
-                    <span>{config.cards.length} points</span>
-                    <span>{tour.status === "published" ? "Published" : "Draft"}</span>
-                    <span>Updated {new Date(tour.updated_at).toLocaleDateString()}</span>
-                  </button>
+                  <article className={styles.row} key={tour.id}>
+                    <button
+                      type="button"
+                      className={styles.rowOpenButton}
+                      onClick={() => navigate(`/map-tour/${tour.id}`)}
+                    >
+                      <span>
+                        <strong>{tour.title}</strong>
+                        <small>{tour.description || "No description"}</small>
+                      </span>
+                      <span>{config.cards.length} points</span>
+                      <span>{tour.status === "published" ? "Published" : "Draft"}</span>
+                      <span>Updated {new Date(tour.updated_at).toLocaleDateString()}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.deleteTourButton}
+                      onClick={() => void deleteTourFromList(tour)}
+                      disabled={deletingTourId === tour.id}
+                      aria-label={`Delete ${tour.title}`}
+                      title="Delete tour"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </article>
                 );
               })
             )}
