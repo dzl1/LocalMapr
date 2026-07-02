@@ -1121,6 +1121,32 @@ export function MapTourPage() {
     }>(response, "Could not create Map Tour.");
 
     if (!response.ok || !payload.app) {
+      if (import.meta.env.DEV && response.status === 404) {
+        const { data: inserted, error: insertError } = await supabase
+          .from("map_apps")
+          .insert({
+            app_type: "map_tour",
+            config: serializeConfig({
+              cards: [createCard(0)],
+              center: defaultCenter,
+              zoom: defaultZoom,
+            }),
+            owner_id: user.id,
+            slug: `map-tour-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
+            title: `Map Tour ${allTours.length + 1}`,
+          })
+          .select("id")
+          .single();
+
+        if (insertError || !inserted) {
+          setError(insertError?.message || "Could not create Map Tour.");
+          return;
+        }
+
+        navigate(`/map-tour/${inserted.id}`);
+        return;
+      }
+
       setError(payload.error || "Could not create Map Tour.");
       return;
     }

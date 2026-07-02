@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import { readApiResponse } from "@/lib/api";
-import type { Database } from "@/lib/database.types";
+import type { Database, Json } from "@/lib/database.types";
 import {
   createBrowserSupabaseClient,
   getSupabaseBrowserConfig,
@@ -22,6 +22,9 @@ type MapApp = Database["public"]["Tables"]["map_apps"]["Row"];
 type MapTourPurchase =
   Database["public"]["Tables"]["map_tour_purchases"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+
+const defaultCenter: [number, number] = [-35.205, 173.95];
+const defaultZoom = 11;
 
 const appTypeLabels: Record<string, string> = {
   field_app: "Field app",
@@ -82,6 +85,7 @@ async function startBillingFlow(path: string, body?: Record<string, unknown>) {
 async function createMapTourDraft(body: {
   description: string;
   title: string;
+  userId: string;
 }) {
   const supabase = createBrowserSupabaseClient();
   const {
@@ -106,6 +110,44 @@ async function createMapTourDraft(body: {
   }>(response, "Map Tour could not be created.");
 
   if (!response.ok || !payload.app) {
+    if (import.meta.env.DEV && response.status === 404) {
+      const slugBase = slugify(body.title || "map-tour") || "map-tour";
+      const { data: inserted, error } = await supabase
+        .from("map_apps")
+        .insert({
+          app_type: "map_tour",
+          config: {
+            cards: [
+              {
+                body: "",
+                color: "#1f4834",
+                hoverText: "",
+                id: `tour-card-${Date.now()}-0`,
+                imageTimerSeconds: 4,
+                imageUrls: [],
+                lat: defaultCenter[0],
+                lng: defaultCenter[1],
+                title: "Tour point 1",
+              },
+            ],
+            center: defaultCenter,
+            zoom: defaultZoom,
+          } as Json,
+          description: body.description || null,
+          owner_id: body.userId,
+          slug: `${slugBase}-${crypto.randomUUID().slice(0, 8)}`,
+          title: body.title || "Untitled map tour",
+        })
+        .select("*")
+        .single();
+
+      if (error || !inserted) {
+        throw new Error(error?.message ?? "Map Tour could not be created.");
+      }
+
+      return inserted;
+    }
+
     throw new Error(payload.error ?? "Map Tour could not be created.");
   }
 
@@ -247,7 +289,7 @@ export function DashboardPage() {
 
     if (appType === "map_tour") {
       try {
-        await createMapTourDraft({ description, title });
+        await createMapTourDraft({ description, title, userId: user.id });
         event.currentTarget.reset();
         setCreateType("map_tour");
         setMessage("Draft map app created.");
@@ -396,33 +438,35 @@ export function DashboardPage() {
           <h1>Your map apps</h1>
           <span>{user?.email}</span>
         </div>
-        <div className={styles.planPanel}>
-          <span>Plan</span>
-          <strong>{formatStatus(planStatus)}</strong>
-          <p>
-            {isPaid
-              ? "Your paid workspace is enabled."
-              : "Start on the free workspace, then upgrade when you are ready."}
-          </p>
-          <button
-            disabled={billingPending}
-            type="button"
-            onClick={() =>
-              handleBilling(
-                isPaid ? "/api/billing/portal" : "/api/billing/checkout",
-              )
-            }
-          >
-            {billingPending
-              ? "Opening..."
-              : isPaid
-                ? "Manage billing"
-                : "Upgrade"}
-          </button>
-          <small>
-            Map Tour credits: {unusedTourCredits} available. Free Map Tours: {Math.max(0, FREE_MAP_TOUR_LIMIT - mapTourApps.length)} remaining.
-          </small>
-        </div>
+        {!isAdmin ? (
+          <div className={styles.planPanel}>
+            <span>Plan</span>
+            <strong>{formatStatus(planStatus)}</strong>
+            <p>
+              {isPaid
+                ? "Your paid workspace is enabled."
+                : "Start on the free workspace, then upgrade when you are ready."}
+            </p>
+            <button
+              disabled={billingPending}
+              type="button"
+              onClick={() =>
+                handleBilling(
+                  isPaid ? "/api/billing/portal" : "/api/billing/checkout",
+                )
+              }
+            >
+              {billingPending
+                ? "Opening..."
+                : isPaid
+                  ? "Manage billing"
+                  : "Upgrade"}
+            </button>
+            <small>
+              Map Tour credits: {unusedTourCredits} available. Free Map Tours: {Math.max(0, FREE_MAP_TOUR_LIMIT - mapTourApps.length)} remaining.
+            </small>
+          </div>
+        ) : null}
       </section>
 
       {message ? <p className={styles.notice}>{message}</p> : null}
