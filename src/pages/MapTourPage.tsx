@@ -939,9 +939,48 @@ export function MapTourPage() {
     const payload = await readApiResponse<{
       app?: MapApp;
       error?: string;
-    }>(response, "Could not create Map Tour.");
+    }>(response, "Map tour changes could not be saved.");
 
     if (!response.ok || !payload.app) {
+      if (import.meta.env.DEV && response.status === 404) {
+        const publishedAt = nextIsPublished ? new Date().toISOString() : null;
+        const updatePayload: Database["public"]["Tables"]["map_apps"]["Update"] = {
+          config: nextConfig,
+          description: description.trim() || null,
+          title: title.trim() || "Untitled map tour",
+        };
+
+        if (shouldUpdatePublishState) {
+          updatePayload.status = nextIsPublished ? "published" : "draft";
+          updatePayload.published_at = publishedAt;
+        }
+
+        const { data: updated, error: updateError } = await supabase
+          .from("map_apps")
+          .update(updatePayload)
+          .eq("id", app.id)
+          .eq("owner_id", user.id)
+          .select("*")
+          .single();
+
+        if (updateError || !updated) {
+          setSaveState("error");
+          setError(updateError?.message || "Map tour changes could not be saved.");
+          return false;
+        }
+
+        setApp(updated);
+        setTitle(updated.title);
+        setDescription(updated.description || "");
+        setIsPublished(updated.status === "published");
+        setSaveState("saved");
+        setDirty(false);
+        if (!silent) {
+          setMessage("Map tour changes saved.");
+        }
+        return true;
+      }
+
       setSaveState("error");
       setError(payload.error || "Map tour changes could not be saved.");
       return false;
