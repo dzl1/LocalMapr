@@ -1250,7 +1250,7 @@ export function MapTourPage() {
     );
   }
 
-  if (error && !isListMode) {
+  if (error && !isListMode && !app) {
     return (
       <main className={styles.homePage}>
         <section className={styles.statusCard}>
