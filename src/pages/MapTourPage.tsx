@@ -426,7 +426,7 @@ export function MapTourPage() {
 
   useEffect(() => {
     async function load() {
-      if (!hasSupabase && !isPublic) {
+      if (!hasSupabase) {
         setError("Supabase is not configured for this workspace.");
         setLoading(false);
         return;
@@ -437,34 +437,25 @@ export function MapTourPage() {
       initializedRef.current = false;
 
       if (isPublic) {
-        let payload: { app?: MapApp; error?: string } = {};
-        let ok = false;
+        const supabase = createBrowserSupabaseClient();
+        const { data, error: tourError } = await supabase
+          .from("map_apps")
+          .select("*")
+          .eq("slug", slug ?? "")
+          .eq("app_type", "map_tour")
+          .eq("status", "published")
+          .maybeSingle();
 
-        try {
-          const response = await fetch(
-            `/api/map-tour/public?slug=${encodeURIComponent(slug ?? "")}`,
-          );
-          ok = response.ok;
-          payload = (await response.json().catch(() => ({}))) as {
-            app?: MapApp;
-            error?: string;
-          };
-        } catch {
-          setError("This published map tour could not be loaded.");
+        if (tourError || !data) {
+          setError("This published map tour could not be found.");
           setLoading(false);
           return;
         }
 
-        if (!ok || !payload.app) {
-          setError(payload.error || "This published map tour could not be found.");
-          setLoading(false);
-          return;
-        }
-
-        const config = parseConfig(payload.app.config);
-        setApp(payload.app);
-        setTitle(payload.app.title);
-        setDescription(payload.app.description || "");
+        const config = parseConfig(data.config);
+        setApp(data);
+        setTitle(data.title);
+        setDescription(data.description || "");
         setIsPublished(true);
         setCards(config.cards);
         setSelectedCardId(config.cards[0]?.id || null);
