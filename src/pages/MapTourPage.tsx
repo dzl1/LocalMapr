@@ -584,40 +584,6 @@ export function MapTourPage() {
   }, [isPublic, searchParams, setSearchParams, user]);
 
   useEffect(() => {
-    if (
-      !initializedRef.current ||
-      isPublic ||
-      isListMode ||
-      !app ||
-      !user ||
-      !dirty
-    ) {
-      return undefined;
-    }
-
-    const timer = window.setTimeout(() => {
-      if (draggingCardIdRef.current) {
-        return;
-      }
-
-      void persistChanges(true);
-    }, 1200);
-
-    return () => window.clearTimeout(timer);
-  }, [
-    app,
-    cards,
-    description,
-    dirty,
-    isListMode,
-    isPublic,
-    isPublished,
-    title,
-    user,
-    viewport,
-  ]);
-
-  useEffect(() => {
     if (!selectedCardId) {
       return;
     }
@@ -1634,11 +1600,25 @@ export function MapTourPage() {
                 >
                   {isAdding ? "Click map" : "Place on map"}
                 </button>
+                <button
+                  type="button"
+                  className={styles.button}
+                  onClick={() => void persistChanges(false)}
+                  disabled={saveState === "saving" || !dirty}
+                >
+                  {saveState === "saving" ? "Saving" : "Save"}
+                </button>
                 <button type="button" className={cx(styles.button, styles.buttonDanger)} onClick={() => void deleteTour()}>
                   Delete tour
                 </button>
                 <span className={cx(styles.saveState, saveState === "error" && styles.saveStateError)}>
-                  {saveState === "saving" ? "Saving" : saveState === "error" ? "Save failed" : "Saved"}
+                  {saveState === "saving"
+                    ? "Saving"
+                    : saveState === "error"
+                      ? "Save failed"
+                      : dirty
+                        ? "Unsaved changes"
+                        : "Saved"}
                 </span>
               </div>
             ) : null}
@@ -1765,8 +1745,8 @@ export function MapTourPage() {
           </div>
 
           <div className={styles.editorActions}>
-            <button type="button" className={styles.button} onClick={() => void persistChanges(false)} disabled={saveState === "saving"}>
-              Save
+            <button type="button" className={styles.button} onClick={() => void persistChanges(false)} disabled={saveState === "saving" || !dirty}>
+              {saveState === "saving" ? "Saving" : "Save"}
             </button>
             <button type="button" className={cx(styles.button, styles.buttonQuiet)} onClick={() => moveSelectedCard(-1)}>
               Move up
