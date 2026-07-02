@@ -9,12 +9,18 @@ export async function readApiResponse<T extends ApiErrorPayload>(
   const contentType = response.headers.get("content-type") || "";
 
   if (contentType.includes("application/json")) {
-    return (await response.json()) as T;
+    try {
+      return (await response.json()) as T;
+    } catch {
+      return {
+        error: `${fallbackError} Server returned invalid JSON with status ${response.status}.`,
+      } as T;
+    }
   }
 
   const text = await response.text();
 
   return {
-    error: text.trim() || fallbackError,
+    error: text.trim() || `${fallbackError} Status ${response.status}.`,
   } as T;
 }

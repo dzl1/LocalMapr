@@ -6,10 +6,12 @@ import {
   getMapTourPointCount,
   FREE_MAP_TOUR_POINT_LIMIT,
   getUnusedTourCreditCount,
+  isMissingMapTourPurchasesTable,
   MAP_TOUR_CREDIT_PRICE_LABEL,
   PAID_MAP_TOUR_POINT_BLOCK,
 } from "../../src/lib/mapTourBilling";
 import {
+  errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   readRawBody,
@@ -78,7 +80,7 @@ async function isSuperAdmin(
   return Boolean(data);
 }
 
-export default async function handler(
+async function handleCreateMapTour(
   request: ApiRequest,
   response: ApiResponse,
 ) {
@@ -114,7 +116,16 @@ export default async function handler(
   const description = String(payload.description || "").trim() || null;
   const config = payload.config ?? defaultConfig();
   const pointCount = getMapTourPointCount(config);
-  const admin = await isSuperAdmin(supabase, user.email);
+  let admin = false;
+
+  try {
+    admin = await isSuperAdmin(supabase, user.email);
+  } catch (error) {
+    sendJson(response, 500, {
+      error: errorMessage(error, "Could not check admin access."),
+    });
+    return;
+  }
 
   if (!admin && pointCount > FREE_MAP_TOUR_POINT_LIMIT) {
     sendJson(response, 402, {
@@ -124,21 +135,42 @@ export default async function handler(
   }
 
   if (!admin) {
-    const [{ count: tourCount }, { data: purchases }] = await Promise.all([
-      supabase
-        .from("map_apps")
-        .select("id", { count: "exact", head: true })
-        .eq("owner_id", user.id)
-        .eq("app_type", "map_tour"),
-      supabase
-        .from("map_tour_purchases")
-        .select("credit_type,map_app_id,status,used_at")
-        .eq("user_id", user.id),
-    ]);
+    const [
+      { count: tourCount, error: tourCountError },
+      { data: purchases, error: purchasesError },
+    ] = await Promise.all([
+        supabase
+          .from("map_apps")
+          .select("id", { count: "exact", head: true })
+          .eq("owner_id", user.id)
+          .eq("app_type", "map_tour"),
+        supabase
+          .from("map_tour_purchases")
+          .select("credit_type,map_app_id,status,used_at")
+          .eq("user_id", user.id),
+      ]);
+
+    if (tourCountError) {
+      sendJson(response, 500, {
+        error: tourCountError.message || "Could not count Map Tours.",
+      });
+      return;
+    }
+
+    if (purchasesError && !isMissingMapTourPurchasesTable(purchasesError)) {
+      sendJson(response, 500, {
+        error: purchasesError.message || "Could not load Map Tour credits.",
+      });
+      return;
+    }
+
+    const safePurchases = isMissingMapTourPurchasesTable(purchasesError)
+      ? []
+      : purchases ?? [];
 
     if (
       (tourCount ?? 0) >= FREE_MAP_TOUR_LIMIT &&
-      getUnusedTourCreditCount(purchases ?? []) < 1
+      getUnusedTourCreditCount(safePurchases) < 1
     ) {
       sendJson(response, 402, {
         error: `Your ${FREE_MAP_TOUR_LIMIT} free Map Tours are used. Buy a ${MAP_TOUR_CREDIT_PRICE_LABEL} tour credit to create another.`,
@@ -169,4 +201,17 @@ export default async function handler(
   }
 
   sendJson(response, 200, { app: inserted });
+}
+
+export default async function handler(
+  request: ApiRequest,
+  response: ApiResponse,
+) {
+  try {
+    await handleCreateMapTour(request, response);
+  } catch (error) {
+    sendJson(response, 500, {
+      error: errorMessage(error, "Could not create Map Tour."),
+    });
+  }
 }

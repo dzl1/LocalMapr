@@ -27,19 +27,31 @@ export default async function handler(
 
   const baseUrl = getRequestOrigin(request);
   const { user, error: authError } = await getAuthenticatedUser(request);
-  const { supabase, error: supabaseError } = getAdminClient();
-  const stripe = createStripeClient();
-  const stripeConfig = getMapTourStripeConfig();
 
   if (authError || !user) {
     sendJson(response, 401, { error: authError });
     return;
   }
 
+  const { supabase, error: supabaseError } = getAdminClient();
+
   if (supabaseError || !supabase) {
     sendJson(response, 500, { error: supabaseError });
     return;
   }
+
+  let stripe;
+
+  try {
+    stripe = createStripeClient();
+  } catch (error) {
+    sendJson(response, 500, {
+      error: errorMessage(error, "Stripe is not configured."),
+    });
+    return;
+  }
+
+  const stripeConfig = getMapTourStripeConfig();
 
   if (!stripe || !stripeConfig) {
     sendJson(response, 500, { error: "Map Tour Stripe billing is not configured." });

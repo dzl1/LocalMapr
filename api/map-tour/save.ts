@@ -6,10 +6,12 @@ import {
   getMapTourPointCount,
   getMapTourPointLimit,
   getPointCreditCount,
+  isMissingMapTourPurchasesTable,
   MAP_TOUR_CREDIT_PRICE_LABEL,
   PAID_MAP_TOUR_POINT_BLOCK,
 } from "../../src/lib/mapTourBilling";
 import {
+  errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   readRawBody,
@@ -96,12 +98,33 @@ export default async function handler(
     return;
   }
 
-  const admin = await isSuperAdmin(supabase, user.email);
-  const { data: purchases } = await supabase
+  let admin = false;
+
+  try {
+    admin = await isSuperAdmin(supabase, user.email);
+  } catch (error) {
+    sendJson(response, 500, {
+      error: errorMessage(error, "Could not check admin access."),
+    });
+    return;
+  }
+
+  const { data: purchases, error: purchasesError } = await supabase
     .from("map_tour_purchases")
     .select("credit_type,map_app_id,status,used_for_app_id")
     .eq("user_id", user.id);
-  const pointCreditCount = getPointCreditCount(purchases ?? [], appId);
+
+  if (purchasesError && !isMissingMapTourPurchasesTable(purchasesError)) {
+    sendJson(response, 500, {
+      error: purchasesError.message || "Could not load Map Tour credits.",
+    });
+    return;
+  }
+
+  const safePurchases = isMissingMapTourPurchasesTable(purchasesError)
+    ? []
+    : purchases ?? [];
+  const pointCreditCount = getPointCreditCount(safePurchases, appId);
   const pointLimit = getMapTourPointLimit(pointCreditCount, admin);
   const pointCount = getMapTourPointCount(payload.config);
 

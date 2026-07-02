@@ -14,6 +14,7 @@ import {
 import {
   FREE_MAP_TOUR_LIMIT,
   getUnusedTourCreditCount,
+  isMissingMapTourPurchasesTable,
 } from "@/lib/mapTourBilling";
 import styles from "@/app/dashboard/dashboard.module.css";
 
@@ -157,7 +158,7 @@ export function DashboardPage() {
     const [
       { data: profileData },
       { data: appsData },
-      { data: purchasesData },
+      { data: purchasesData, error: purchasesError },
       { data: adminRecord },
     ] =
       await Promise.all([
@@ -186,7 +187,9 @@ export function DashboardPage() {
 
     setProfile(profileData);
     setApps(appsData ?? []);
-    setPurchases(purchasesData ?? []);
+    setPurchases(
+      isMissingMapTourPurchasesTable(purchasesError) ? [] : purchasesData ?? [],
+    );
     setIsAdmin(Boolean(adminRecord));
     setLoading(false);
   }

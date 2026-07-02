@@ -24,6 +24,7 @@ import {
   getMapTourPointLimit,
   getPointCreditCount,
   getUnusedTourCreditCount,
+  isMissingMapTourPurchasesTable,
   MAP_TOUR_CREDIT_PRICE_LABEL,
   PAID_MAP_TOUR_POINT_BLOCK,
 } from "@/lib/mapTourBilling";
@@ -485,7 +486,11 @@ export function MapTourPage() {
 
       setUser(currentUser);
 
-      const [{ data: appRows }, { data: purchasesData }, { data: adminRecord }] =
+      const [
+        { data: appRows },
+        { data: purchasesData, error: purchasesError },
+        { data: adminRecord },
+      ] =
         await Promise.all([
           supabase
             .from("map_apps")
@@ -508,9 +513,12 @@ export function MapTourPage() {
 
       const tours = appRows ?? [];
       const selectedApp = appId ? tours.find((item) => item.id === appId) ?? null : null;
+      const safePurchases = isMissingMapTourPurchasesTable(purchasesError)
+        ? []
+        : purchasesData ?? [];
 
       setAllTours(tours);
-      setPurchases(purchasesData ?? []);
+      setPurchases(safePurchases);
       setIsAdmin(Boolean(adminRecord));
 
       if (isListMode) {
@@ -928,10 +936,10 @@ export function MapTourPage() {
         title,
       }),
     });
-    const payload = (await response.json().catch(() => ({}))) as {
+    const payload = await readApiResponse<{
       app?: MapApp;
       error?: string;
-    };
+    }>(response, "Could not create Map Tour.");
 
     if (!response.ok || !payload.app) {
       setSaveState("error");
@@ -1107,10 +1115,10 @@ export function MapTourPage() {
         title: `Map Tour ${allTours.length + 1}`,
       }),
     });
-    const payload = (await response.json().catch(() => ({}))) as {
+    const payload = await readApiResponse<{
       app?: MapApp;
       error?: string;
-    };
+    }>(response, "Could not create Map Tour.");
 
     if (!response.ok || !payload.app) {
       setError(payload.error || "Could not create Map Tour.");

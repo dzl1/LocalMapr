@@ -11,6 +11,21 @@ export type MapTourCreditLike = {
   used_for_app_id?: string | null;
 };
 
+export function isMissingMapTourPurchasesTable(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const value = error as Record<string, unknown>;
+  const code = typeof value.code === "string" ? value.code : "";
+  const message = typeof value.message === "string" ? value.message : "";
+
+  return (
+    (code === "PGRST205" || code === "42P01") &&
+    message.toLowerCase().includes("map_tour_purchases")
+  );
+}
+
 export function isPaidMapTourCreditStatus(status?: string | null) {
   return status === "paid" || status === "completed";
 }
