@@ -1,28 +1,12 @@
-import type {
-  RealtimeClientOptions,
-  WebSocketLikeConstructor,
-} from "@supabase/supabase-js";
-import type { Database } from "../../src/lib/database.types";
-
-type ApiRequest = {
-  headers: Record<string, string | string[] | undefined>;
-  method?: string;
-  [Symbol.asyncIterator]?: unknown;
-};
-
-type ApiResponse = {
-  end: (chunk?: string) => void;
-  setHeader: (name: string, value: string) => void;
-  statusCode: number;
-};
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const EMAIL_VERIFICATION_REQUIRED_MESSAGE =
   "Please verify your email before signing in. Check your inbox for the confirmation link.";
 
-let cachedFileEnv: Record<string, string> | null = null;
+let cachedFileEnv = null;
 
-function parseEnvFile(content: string) {
-  const result: Record<string, string> = {};
+function parseEnvFile(content) {
+  const result = {};
 
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -53,16 +37,14 @@ function parseEnvFile(content: string) {
   return result;
 }
 
-async function readLocalEnvFile() {
+function readLocalEnvFile() {
   if (cachedFileEnv) {
     return cachedFileEnv;
   }
 
   try {
-    const [{ existsSync, readFileSync }, { resolve }] = await Promise.all([
-      import("node:fs"),
-      import("node:path"),
-    ]);
+    const { existsSync, readFileSync } = require("node:fs");
+    const { resolve } = require("node:path");
     const candidatePaths = [
       resolve(process.cwd(), ".env"),
       resolve(process.cwd(), ".env.local"),
@@ -84,33 +66,29 @@ async function readLocalEnvFile() {
   return cachedFileEnv;
 }
 
-async function getEnv(name: string) {
-  return process.env[name] ?? (await readLocalEnvFile())[name] ?? null;
+function getEnv(name) {
+  return process.env[name] ?? readLocalEnvFile()[name] ?? null;
 }
 
-function sendJson(response: ApiResponse, statusCode: number, payload: unknown) {
+function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
   response.setHeader("Content-Type", "application/json");
   response.end(JSON.stringify(payload));
 }
 
-function errorMessage(error: unknown, fallback: string) {
+function errorMessage(error, fallback) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-function isUserEmailVerified(user?: {
-  confirmed_at?: string | null;
-  email?: string | null;
-  email_confirmed_at?: string | null;
-} | null) {
+function isUserEmailVerified(user) {
   return Boolean(user?.email && (user.email_confirmed_at || user.confirmed_at));
 }
 
-function firstHeaderValue(value: string | string[] | undefined) {
+function firstHeaderValue(value) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-async function getAppBaseUrl(requestUrl?: string) {
+function getAppBaseUrl(requestUrl) {
   if (requestUrl) {
     try {
       return new URL(requestUrl).origin;
@@ -119,7 +97,7 @@ async function getAppBaseUrl(requestUrl?: string) {
     }
   }
 
-  const configuredUrl = await getEnv("VITE_APP_URL");
+  const configuredUrl = getEnv("VITE_APP_URL");
 
   if (configuredUrl) {
     return configuredUrl.replace(/\/$/, "");
@@ -128,7 +106,7 @@ async function getAppBaseUrl(requestUrl?: string) {
   return "http://localhost:3000";
 }
 
-async function getRequestOrigin(request: ApiRequest) {
+function getRequestOrigin(request) {
   const host = firstHeaderValue(
     request.headers["x-forwarded-host"] ?? request.headers.host,
   );
@@ -143,9 +121,9 @@ async function getRequestOrigin(request: ApiRequest) {
   return getAppBaseUrl(`${protocol}://${host}`);
 }
 
-async function getSupabaseConfig() {
-  const url = await getEnv("VITE_SUPABASE_URL");
-  const anonKey = await getEnv("VITE_SUPABASE_ANON_KEY");
+function getSupabaseConfig() {
+  const url = getEnv("VITE_SUPABASE_URL");
+  const anonKey = getEnv("VITE_SUPABASE_ANON_KEY");
 
   if (!url || !anonKey) {
     return null;
@@ -160,12 +138,12 @@ async function getSupabaseConfig() {
   return { anonKey, url };
 }
 
-async function getSupabaseAdminConfig() {
-  const publicConfig = await getSupabaseConfig();
+function getSupabaseAdminConfig() {
+  const publicConfig = getSupabaseConfig();
   const serviceRoleKey =
-    (await getEnv("SUPABASE_SERVICE_ROLE_KEY")) ??
-    (await getEnv("SUPABASE_SERVICE_KEY")) ??
-    (await getEnv("VITE_SUPABASE_SERVICE_ROLE_KEY"));
+    getEnv("SUPABASE_SERVICE_ROLE_KEY") ??
+    getEnv("SUPABASE_SERVICE_KEY") ??
+    getEnv("VITE_SUPABASE_SERVICE_ROLE_KEY");
 
   if (!publicConfig || !serviceRoleKey) {
     return null;
@@ -174,20 +152,15 @@ async function getSupabaseAdminConfig() {
   return { ...publicConfig, serviceRoleKey };
 }
 
-async function getNodeRealtimeOptions() {
+function getNodeRealtimeOptions() {
   if (typeof globalThis.WebSocket === "function") {
-    return {
-      transport: globalThis.WebSocket as unknown as WebSocketLikeConstructor,
-    } satisfies Pick<RealtimeClientOptions, "transport">;
+    return { transport: globalThis.WebSocket };
   }
 
-  const ws = await import("ws");
-  return {
-    transport: ws.default as unknown as WebSocketLikeConstructor,
-  } satisfies Pick<RealtimeClientOptions, "transport">;
+  return { transport: require("ws") };
 }
 
-function getBearerToken(request: ApiRequest) {
+function getBearerToken(request) {
   const value = firstHeaderValue(request.headers.authorization);
 
   if (!value?.startsWith("Bearer ")) {
@@ -197,27 +170,27 @@ function getBearerToken(request: ApiRequest) {
   return value.slice("Bearer ".length);
 }
 
-async function createSupabaseClient(key: string, url: string) {
-  const { createClient } = await import("@supabase/supabase-js");
+function createSupabaseClient(key, url) {
+  const { createClient } = require("@supabase/supabase-js");
 
-  return createClient<Database, "public", "public">(url, key, {
+  return createClient(url, key, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
-    realtime: await getNodeRealtimeOptions(),
+    realtime: getNodeRealtimeOptions(),
   });
 }
 
-async function getAuthenticatedUser(request: ApiRequest) {
+async function getAuthenticatedUser(request) {
   const token = getBearerToken(request);
-  const config = await getSupabaseConfig();
+  const config = getSupabaseConfig();
 
   if (!token || !config) {
     return { error: "Authentication is required.", user: null };
   }
 
-  const supabase = await createSupabaseClient(config.anonKey, config.url);
+  const supabase = createSupabaseClient(config.anonKey, config.url);
   const { data, error } = await supabase.auth.getUser(token);
 
   if (error || !data.user) {
@@ -231,34 +204,34 @@ async function getAuthenticatedUser(request: ApiRequest) {
   return { error: null, user: data.user };
 }
 
-async function getAdminClient() {
-  const config = await getSupabaseAdminConfig();
+function getAdminClient() {
+  const config = getSupabaseAdminConfig();
 
   if (!config) {
     return { error: "Supabase admin is not configured.", supabase: null };
   }
 
-  const supabase = await createSupabaseClient(config.serviceRoleKey, config.url);
+  const supabase = createSupabaseClient(config.serviceRoleKey, config.url);
   return { error: null, supabase };
 }
 
-async function createStripeClient() {
-  const secretKey = await getEnv("STRIPE_SECRET_KEY");
+function createStripeClient() {
+  const secretKey = getEnv("STRIPE_SECRET_KEY");
 
   if (!secretKey) {
     return null;
   }
 
-  const { default: Stripe } = await import("stripe");
+  const Stripe = require("stripe");
 
   return new Stripe(secretKey, {
     apiVersion: "2026-05-27.dahlia",
   });
 }
 
-async function getStripeConfig() {
-  const secretKey = await getEnv("STRIPE_SECRET_KEY");
-  const priceId = await getEnv("STRIPE_PRO_PRICE_ID");
+function getStripeConfig() {
+  const secretKey = getEnv("STRIPE_SECRET_KEY");
+  const priceId = getEnv("STRIPE_PRO_PRICE_ID");
 
   if (!secretKey || !priceId) {
     return null;
@@ -267,27 +240,13 @@ async function getStripeConfig() {
   return { priceId, secretKey };
 }
 
-export default async function handler(
-  request: ApiRequest,
-  response: ApiResponse,
-) {
-  try {
-    await handleCheckout(request, response);
-  } catch (error) {
-    console.error("billing/checkout handler failed:", error);
-    sendJson(response, 500, {
-      error: errorMessage(error, "Checkout failed unexpectedly."),
-    });
-  }
-}
-
-async function handleCheckout(request: ApiRequest, response: ApiResponse) {
+async function handleCheckout(request, response) {
   if (request.method !== "POST") {
     sendJson(response, 405, { error: "Method not allowed." });
     return;
   }
 
-  const baseUrl = await getRequestOrigin(request);
+  const baseUrl = getRequestOrigin(request);
   const { user, error: authError } = await getAuthenticatedUser(request);
 
   if (authError || !user) {
@@ -295,7 +254,7 @@ async function handleCheckout(request: ApiRequest, response: ApiResponse) {
     return;
   }
 
-  const { supabase, error: supabaseError } = await getAdminClient();
+  const { supabase, error: supabaseError } = getAdminClient();
 
   if (supabaseError || !supabase) {
     sendJson(response, 500, { error: supabaseError });
@@ -305,7 +264,7 @@ async function handleCheckout(request: ApiRequest, response: ApiResponse) {
   let stripe;
 
   try {
-    stripe = await createStripeClient();
+    stripe = createStripeClient();
   } catch (error) {
     sendJson(response, 500, {
       error: errorMessage(error, "Stripe is not configured."),
@@ -313,20 +272,18 @@ async function handleCheckout(request: ApiRequest, response: ApiResponse) {
     return;
   }
 
-  const stripeConfig = await getStripeConfig();
+  const stripeConfig = getStripeConfig();
 
   if (!stripe || !stripeConfig) {
     sendJson(response, 500, { error: "Stripe is not configured." });
     return;
   }
 
-  const { data: profileResult } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
     .select("stripe_customer_id")
     .eq("id", user.id)
     .maybeSingle();
-  const profile = profileResult as { stripe_customer_id: string | null } | null;
-
   let customerId = profile?.stripe_customer_id ?? null;
 
   if (!customerId) {
@@ -393,3 +350,14 @@ async function handleCheckout(request: ApiRequest, response: ApiResponse) {
 
   sendJson(response, 200, { url: session.url });
 }
+
+module.exports = async function handler(request, response) {
+  try {
+    await handleCheckout(request, response);
+  } catch (error) {
+    console.error("billing/checkout handler failed:", error);
+    sendJson(response, 500, {
+      error: errorMessage(error, "Checkout failed unexpectedly."),
+    });
+  }
+};
