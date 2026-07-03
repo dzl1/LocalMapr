@@ -4,10 +4,8 @@ import { resolve } from "node:path";
 import {
   createClient,
   type SupabaseClient,
-  type WebSocketLikeConstructor,
 } from "@supabase/supabase-js";
 import Stripe from "stripe";
-import WebSocket from "ws";
 import type { Database } from "../src/lib/database.types";
 
 export type ApiRequest = IncomingMessage & {
@@ -30,7 +28,6 @@ function isUserEmailVerified(user?: EmailVerificationUser | null) {
   return Boolean(user?.email && (user.email_confirmed_at || user.confirmed_at));
 }
 
-const realtimeTransport = WebSocket as unknown as WebSocketLikeConstructor;
 let cachedFileEnv: Record<string, string> | null = null;
 
 function parseEnvFile(content: string) {
@@ -169,9 +166,6 @@ export function createSupabaseAdminClient():
       autoRefreshToken: false,
       persistSession: false,
     },
-    realtime: {
-      transport: realtimeTransport,
-    },
   });
 }
 
@@ -250,9 +244,6 @@ export async function getAuthenticatedUser(request: ApiRequest) {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
-    },
-    realtime: {
-      transport: realtimeTransport,
     },
   });
   const { data, error } = await supabase.auth.getUser(token);
