@@ -1,6 +1,11 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createClient } from "@supabase/supabase-js";
+import {
+  createClient,
+  type SupabaseClient,
+  type WebSocketLikeConstructor,
+} from "@supabase/supabase-js";
 import Stripe from "stripe";
+import WebSocket from "ws";
 import type { Database } from "../src/lib/database.types";
 
 export type ApiRequest = IncomingMessage & {
@@ -22,6 +27,8 @@ type EmailVerificationUser = {
 function isUserEmailVerified(user?: EmailVerificationUser | null) {
   return Boolean(user?.email && (user.email_confirmed_at || user.confirmed_at));
 }
+
+const realtimeTransport = WebSocket as unknown as WebSocketLikeConstructor;
 
 export function sendJson(
   response: ApiResponse,
@@ -83,17 +90,22 @@ export function getSupabaseAdminConfig() {
   return { ...publicConfig, serviceRoleKey };
 }
 
-export function createSupabaseAdminClient() {
+export function createSupabaseAdminClient():
+  | SupabaseClient<Database, "public", "public">
+  | null {
   const config = getSupabaseAdminConfig();
 
   if (!config) {
     return null;
   }
 
-  return createClient<Database>(config.url, config.serviceRoleKey, {
+  return createClient<Database, "public">(config.url, config.serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    realtime: {
+      transport: realtimeTransport,
     },
   });
 }
@@ -169,10 +181,13 @@ export async function getAuthenticatedUser(request: ApiRequest) {
     return { error: "Authentication is required.", user: null };
   }
 
-  const supabase = createClient<Database>(config.url, config.anonKey, {
+  const supabase = createClient<Database, "public">(config.url, config.anonKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    realtime: {
+      transport: realtimeTransport,
     },
   });
   const { data, error } = await supabase.auth.getUser(token);
