@@ -139,7 +139,7 @@ async function handleMapTourCheckout(
         supabase_user_id: user.id,
       },
       mode: "payment",
-      success_url: `${baseUrl}/dashboard?checkout=success&credit=tour`,
+      success_url: `${baseUrl}/dashboard?checkout=success&credit=tour&session_id={CHECKOUT_SESSION_ID}`,
     });
   } catch (error) {
     sendJson(response, 502, {

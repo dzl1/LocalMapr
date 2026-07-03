@@ -258,6 +258,73 @@ export function DashboardPage() {
     }
   }, [searchParams, setSearchParams]);
 
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+
+    if (checkout === "success") {
+      const sessionId = searchParams.get("session_id");
+      const next = new URLSearchParams(searchParams);
+      next.delete("checkout");
+      next.delete("credit");
+      next.delete("session_id");
+      setSearchParams(next, { replace: true });
+      setMessage("Checkout completed. Updating your Map Tour credits...");
+
+      void (async () => {
+        if (!sessionId) {
+          await loadDashboard();
+          setMessage("Checkout completed.");
+          return;
+        }
+
+        try {
+          const supabase = createBrowserSupabaseClient();
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+
+          if (!session?.access_token) {
+            await loadDashboard();
+            return;
+          }
+
+          const response = await fetch("/api/billing/map-tour-credit-sync", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ sessionId }),
+          });
+          const payload = await readApiResponse<{
+            error?: string;
+            purchases?: MapTourPurchase[];
+          }>(response, "Map Tour credit could not be synced.");
+
+          if (!response.ok || !payload.purchases) {
+            throw new Error(payload.error || "Map Tour credit could not be synced.");
+          }
+
+          setPurchases(payload.purchases);
+          setMessage("Checkout completed. Your Map Tour credits were updated.");
+        } catch (syncError) {
+          await loadDashboard();
+          setError(
+            syncError instanceof Error
+              ? syncError.message
+              : "Map Tour credit could not be synced.",
+          );
+        }
+      })();
+    } else if (checkout === "cancelled") {
+      const next = new URLSearchParams(searchParams);
+      next.delete("checkout");
+      next.delete("session_id");
+      setSearchParams(next, { replace: true });
+      setError("Checkout was cancelled.");
+    }
+  }, [searchParams, setSearchParams]);
+
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setCreating(true);
