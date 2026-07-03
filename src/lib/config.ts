@@ -62,11 +62,10 @@ export function getStripeConfig() {
 export function getMapTourStripeConfig() {
   const secretKey = getStripeSecretKey();
   const tourCreditPriceId = process.env.STRIPE_MAP_TOUR_CREDIT_PRICE_ID;
-  const pointUpgradePriceId = process.env.STRIPE_MAP_POINT_UPGRADE_PRICE_ID;
 
-  if (!secretKey || !tourCreditPriceId || !pointUpgradePriceId) {
+  if (!secretKey || !tourCreditPriceId) {
     return null;
   }
 
-  return { pointUpgradePriceId, secretKey, tourCreditPriceId };
+  return { secretKey, tourCreditPriceId };
 }

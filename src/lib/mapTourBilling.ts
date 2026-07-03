@@ -1,6 +1,5 @@
 export const FREE_MAP_TOUR_LIMIT = 2;
 export const FREE_MAP_TOUR_POINT_LIMIT = 4;
-export const PAID_MAP_TOUR_POINT_BLOCK = 100;
 export const MAP_TOUR_CREDIT_PRICE_LABEL = "$1";
 
 export type MapTourCreditLike = {
@@ -39,34 +38,12 @@ export function getUnusedTourCreditCount(purchases: MapTourCreditLike[]) {
   ).length;
 }
 
-export function getPointCreditCount(
-  purchases: MapTourCreditLike[],
-  mapAppId?: string | null,
-) {
-  if (!mapAppId) {
-    return 0;
-  }
-
-  return purchases.filter(
-    (purchase) =>
-      isPaidMapTourCreditStatus(purchase.status) &&
-      ((purchase.credit_type === "points" && purchase.map_app_id === mapAppId) ||
-        (purchase.credit_type === "tour" &&
-          purchase.used_for_app_id === mapAppId)),
-  ).length;
-}
-
-export function getMapTourPointLimit(
-  pointCreditCount: number,
-  isAdmin = false,
-) {
+export function getMapTourPointLimit(isAdmin = false) {
   if (isAdmin) {
     return Number.POSITIVE_INFINITY;
   }
 
-  return pointCreditCount > 0
-    ? pointCreditCount * PAID_MAP_TOUR_POINT_BLOCK
-    : FREE_MAP_TOUR_POINT_LIMIT;
+  return FREE_MAP_TOUR_POINT_LIMIT;
 }
 
 export function getMapTourPointCount(config: unknown) {

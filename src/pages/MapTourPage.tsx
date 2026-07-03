@@ -21,11 +21,8 @@ import {
   FREE_MAP_TOUR_LIMIT,
   FREE_MAP_TOUR_POINT_LIMIT,
   getMapTourPointLimit,
-  getPointCreditCount,
   getUnusedTourCreditCount,
   isMissingMapTourPurchasesTable,
-  MAP_TOUR_CREDIT_PRICE_LABEL,
-  PAID_MAP_TOUR_POINT_BLOCK,
 } from "@/lib/mapTourBilling";
 import {
   createBrowserSupabaseClient,
@@ -389,7 +386,6 @@ export function MapTourPage() {
   const [saveState, setSaveState] = useState<"saved" | "saving" | "error">(
     "saved",
   );
-  const [upgradePending, setUpgradePending] = useState(false);
   const [dirty, setDirty] = useState(false);
   const initializedRef = useRef(false);
   const tourCardListRef = useRef<HTMLDivElement | null>(null);
@@ -405,11 +401,7 @@ export function MapTourPage() {
     () => cards.find((card) => card.id === selectedCardId) || null,
     [cards, selectedCardId],
   );
-  const pointCreditCount = useMemo(
-    () => getPointCreditCount(purchases, app?.id),
-    [app?.id, purchases],
-  );
-  const selectedPointLimit = getMapTourPointLimit(pointCreditCount, isAdmin);
+  const selectedPointLimit = getMapTourPointLimit(isAdmin);
   const { publicUrl, embedUrl, embedCode } = app?.slug
     ? getShareUrls(app.slug)
     : { embedCode: "", embedUrl: "", publicUrl: "" };
@@ -643,9 +635,7 @@ export function MapTourPage() {
   function addCard(lat: number, lng: number) {
     if (!isAdmin && cards.length >= selectedPointLimit) {
       setError(
-        pointCreditCount > 0
-          ? `This Map Tour has reached ${selectedPointLimit} points. Buy another ${MAP_TOUR_CREDIT_PRICE_LABEL} point credit to unlock the next ${PAID_MAP_TOUR_POINT_BLOCK}.`
-          : `Free Map Tours include up to ${FREE_MAP_TOUR_POINT_LIMIT} points. Buy a ${MAP_TOUR_CREDIT_PRICE_LABEL} point credit to unlock ${PAID_MAP_TOUR_POINT_BLOCK}.`,
+        `Map Tours can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points.`,
       );
       return;
     }
@@ -959,55 +949,6 @@ export function MapTourPage() {
       setMessage(`${label} copied.`);
     } catch {
       setError(`Could not copy ${label.toLowerCase()}.`);
-    }
-  }
-
-  async function startPointUpgradeCheckout() {
-    if (!user || !app) {
-      return;
-    }
-
-    setUpgradePending(true);
-    setError("");
-
-    try {
-      const supabase = createBrowserSupabaseClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error("Please log in again before opening checkout.");
-      }
-
-      const response = await fetch("/api/billing/map-tour-checkout", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          creditType: "points",
-          mapAppId: app.id,
-        }),
-      });
-      const payload = await readApiResponse<{ error?: string; url?: string }>(
-        response,
-        "Could not open point upgrade checkout.",
-      );
-
-      if (!response.ok || !payload.url) {
-        throw new Error(payload.error || "Could not open point upgrade checkout.");
-      }
-
-      window.location.href = payload.url;
-    } catch (checkoutError) {
-      setError(
-        checkoutError instanceof Error
-          ? checkoutError.message
-          : "Could not open point upgrade checkout.",
-      );
-      setUpgradePending(false);
     }
   }
 
@@ -1483,20 +1424,6 @@ export function MapTourPage() {
                   <span>
                     {cards.length}/{isAdmin ? "unlimited" : selectedPointLimit} points
                   </span>
-                  {!isAdmin && cards.length >= selectedPointLimit ? (
-                    <button
-                      type="button"
-                      className={styles.linkButton}
-                      onClick={() => void startPointUpgradeCheckout()}
-                      disabled={upgradePending}
-                    >
-                      {upgradePending
-                        ? "Opening..."
-                        : pointCreditCount > 0
-                          ? `Buy next ${PAID_MAP_TOUR_POINT_BLOCK}`
-                          : `Unlock ${PAID_MAP_TOUR_POINT_BLOCK}`}
-                    </button>
-                  ) : null}
                 </div>
 
                 <section className={styles.sharePanel}>

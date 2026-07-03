@@ -5,10 +5,6 @@ import {
   FREE_MAP_TOUR_POINT_LIMIT,
   getMapTourPointCount,
   getMapTourPointLimit,
-  getPointCreditCount,
-  isMissingMapTourPurchasesTable,
-  MAP_TOUR_CREDIT_PRICE_LABEL,
-  PAID_MAP_TOUR_POINT_BLOCK,
 } from "../../src/lib/mapTourBilling";
 import {
   errorMessage,
@@ -109,32 +105,12 @@ export default async function handler(
     return;
   }
 
-  const { data: purchases, error: purchasesError } = await supabase
-    .from("map_tour_purchases")
-    .select("credit_type,map_app_id,status,used_for_app_id")
-    .eq("user_id", user.id);
-
-  if (purchasesError && !isMissingMapTourPurchasesTable(purchasesError)) {
-    sendJson(response, 500, {
-      error: purchasesError.message || "Could not load Map Tour credits.",
-    });
-    return;
-  }
-
-  const safePurchases = isMissingMapTourPurchasesTable(purchasesError)
-    ? []
-    : purchases ?? [];
-  const pointCreditCount = getPointCreditCount(safePurchases, appId);
-  const pointLimit = getMapTourPointLimit(pointCreditCount, admin);
+  const pointLimit = getMapTourPointLimit(admin);
   const pointCount = getMapTourPointCount(payload.config);
 
   if (!admin && pointCount > pointLimit) {
-    const nextBlock = pointCreditCount > 0 ? PAID_MAP_TOUR_POINT_BLOCK : FREE_MAP_TOUR_POINT_LIMIT;
     sendJson(response, 402, {
-      error:
-        pointCreditCount > 0
-          ? `This Map Tour has ${pointLimit} paid points available. Buy another ${MAP_TOUR_CREDIT_PRICE_LABEL} point credit to add the next ${nextBlock}.`
-          : `Free Map Tours can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points. Buy a ${MAP_TOUR_CREDIT_PRICE_LABEL} point credit to unlock ${PAID_MAP_TOUR_POINT_BLOCK}.`,
+      error: `Map Tours can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points.`,
     });
     return;
   }

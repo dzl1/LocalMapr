@@ -38,7 +38,7 @@ create table if not exists public.map_tour_purchases (
   used_for_app_id uuid references public.map_apps(id) on delete set null,
   created_at timestamptz not null default now(),
   constraint map_tour_purchases_credit_type_check
-    check (credit_type in ('tour', 'points'))
+    check (credit_type = 'tour')
 );
 
 create table if not exists public.subscriptions (
@@ -293,8 +293,6 @@ set search_path = public
 as $$
 declare
   point_count integer;
-  point_credit_count integer;
-  point_limit integer;
   user_is_admin boolean;
 begin
   if new.app_type <> 'map_tour' then
@@ -310,24 +308,8 @@ begin
   end if;
 
   if not user_is_admin then
-    select count(*)
-    into point_credit_count
-    from public.map_tour_purchases
-    where user_id = new.owner_id
-      and public.is_paid_map_tour_credit(status)
-      and (
-        (credit_type = 'points' and map_app_id = new.id)
-        or (credit_type = 'tour' and used_for_app_id = new.id)
-      );
-
-    if point_credit_count > 0 then
-      point_limit := point_credit_count * 100;
-    else
-      point_limit := 4;
-    end if;
-
-    if point_count > point_limit then
-      raise exception 'This Map Tour has % points available. Buy another $1 point credit to add more.', point_limit;
+    if point_count > 4 then
+      raise exception 'Map Tours can include up to 4 points.';
     end if;
   end if;
 

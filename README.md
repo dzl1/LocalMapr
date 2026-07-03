@@ -35,14 +35,12 @@ SUPABASE_SERVICE_ROLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_PRO_PRICE_ID=
 STRIPE_MAP_TOUR_CREDIT_PRICE_ID=
-STRIPE_MAP_POINT_UPGRADE_PRICE_ID=
 STRIPE_WEBHOOK_SECRET=
 ```
 
 Map Tour billing uses one-time Stripe Checkout prices:
 
 - `STRIPE_MAP_TOUR_CREDIT_PRICE_ID`: $1 for one extra Map Tour after the 2 free tours.
-- `STRIPE_MAP_POINT_UPGRADE_PRICE_ID`: $1 for one 100-point block on a specific Map Tour. Free Map Tours start with 4 points.
 
 For local development, put these in `.env.local`. Run the database schema in
 `supabase/schema.sql` before using the dashboard.

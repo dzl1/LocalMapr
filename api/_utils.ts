@@ -7,6 +7,7 @@ import {
 } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import type { Database } from "../src/lib/database.types";
+import { nodeRealtimeOptions } from "../src/lib/supabase/nodeRealtime";
 
 export type ApiRequest = IncomingMessage & {
   method?: string;
@@ -161,11 +162,12 @@ export function createSupabaseAdminClient():
     return null;
   }
 
-  return createClient<Database, "public">(config.url, config.serviceRoleKey, {
+  return createClient<Database, "public", "public">(config.url, config.serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
+    realtime: nodeRealtimeOptions,
   });
 }
 
@@ -187,13 +189,12 @@ export function getStripeConfig() {
 export function getMapTourStripeConfig() {
   const secretKey = getStripeSecretKey();
   const tourCreditPriceId = getEnv("STRIPE_MAP_TOUR_CREDIT_PRICE_ID");
-  const pointUpgradePriceId = getEnv("STRIPE_MAP_POINT_UPGRADE_PRICE_ID");
 
-  if (!secretKey || !tourCreditPriceId || !pointUpgradePriceId) {
+  if (!secretKey || !tourCreditPriceId) {
     return null;
   }
 
-  return { pointUpgradePriceId, secretKey, tourCreditPriceId };
+  return { secretKey, tourCreditPriceId };
 }
 
 export function createStripeClient() {
@@ -240,11 +241,12 @@ export async function getAuthenticatedUser(request: ApiRequest) {
     return { error: "Authentication is required.", user: null };
   }
 
-  const supabase = createClient<Database, "public">(config.url, config.anonKey, {
+  const supabase = createClient<Database, "public", "public">(config.url, config.anonKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
+    realtime: nodeRealtimeOptions,
   });
   const { data, error } = await supabase.auth.getUser(token);
 

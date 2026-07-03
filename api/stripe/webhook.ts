@@ -176,12 +176,7 @@ async function syncCheckoutSession(session: Stripe.Checkout.Session) {
 
   const creditType = session.metadata?.credit_type;
 
-  if (userId && (creditType === "tour" || creditType === "points")) {
-    const mapAppId =
-      typeof session.metadata?.map_app_id === "string" &&
-      session.metadata.map_app_id.trim()
-        ? session.metadata.map_app_id.trim()
-        : null;
+  if (userId && creditType === "tour") {
     const paymentIntentId =
       typeof session.payment_intent === "string"
         ? session.payment_intent
@@ -190,7 +185,7 @@ async function syncCheckoutSession(session: Stripe.Checkout.Session) {
     await supabase.from("map_tour_purchases").upsert(
       {
         credit_type: creditType,
-        map_app_id: creditType === "points" ? mapAppId : null,
+        map_app_id: null,
         status: session.payment_status || session.status || "pending",
         stripe_checkout_session_id: session.id,
         stripe_payment_intent_id: paymentIntentId,

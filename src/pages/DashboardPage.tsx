@@ -365,7 +365,7 @@ export function DashboardPage() {
     }
   }
 
-  async function handleMapTourCheckout(creditType: "tour" | "points") {
+  async function handleMapTourCheckout(creditType: "tour") {
     setBillingPending(true);
     setError("");
 

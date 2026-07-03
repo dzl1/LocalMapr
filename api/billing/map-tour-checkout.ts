@@ -13,7 +13,6 @@ import {
 
 type CheckoutPayload = {
   creditType?: string;
-  mapAppId?: string;
 };
 
 export default async function handler(
@@ -82,27 +81,9 @@ async function handleMapTourCheckout(
     return;
   }
 
-  const creditType = payload.creditType === "points" ? "points" : "tour";
-  const mapAppId = String(payload.mapAppId || "").trim() || null;
-
-  if (creditType === "points") {
-    if (!mapAppId) {
-      sendJson(response, 400, { error: "Map app ID is required for point upgrades." });
-      return;
-    }
-
-    const { data: app } = await supabase
-      .from("map_apps")
-      .select("id")
-      .eq("id", mapAppId)
-      .eq("owner_id", user.id)
-      .eq("app_type", "map_tour")
-      .maybeSingle();
-
-    if (!app) {
-      sendJson(response, 404, { error: "Map tour app was not found." });
-      return;
-    }
+  if (payload.creditType && payload.creditType !== "tour") {
+    sendJson(response, 400, { error: "Point upgrades are not available." });
+    return;
   }
 
   const { data: profileResult } = await supabase
@@ -140,11 +121,6 @@ async function handleMapTourCheckout(
     });
   }
 
-  const priceId =
-    creditType === "tour"
-      ? stripeConfig.tourCreditPriceId
-      : stripeConfig.pointUpgradePriceId;
-
   let session;
 
   try {
@@ -154,21 +130,16 @@ async function handleMapTourCheckout(
       customer: customerId,
       line_items: [
         {
-          price: priceId,
+          price: stripeConfig.tourCreditPriceId,
           quantity: 1,
         },
       ],
       metadata: {
-        credit_type: creditType,
-        credit_unit_points: creditType === "points" ? "100" : "",
-        map_app_id: mapAppId ?? "",
+        credit_type: "tour",
         supabase_user_id: user.id,
       },
       mode: "payment",
-      success_url:
-        creditType === "points" && mapAppId
-          ? `${baseUrl}/map-tour/${encodeURIComponent(mapAppId)}?checkout=success&credit=points`
-          : `${baseUrl}/dashboard?checkout=success&credit=tour`,
+      success_url: `${baseUrl}/dashboard?checkout=success&credit=tour`,
     });
   } catch (error) {
     sendJson(response, 502, {

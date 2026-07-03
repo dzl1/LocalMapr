@@ -8,7 +8,6 @@ import {
   getUnusedTourCreditCount,
   isMissingMapTourPurchasesTable,
   MAP_TOUR_CREDIT_PRICE_LABEL,
-  PAID_MAP_TOUR_POINT_BLOCK,
 } from "../../src/lib/mapTourBilling";
 import {
   errorMessage,
@@ -129,7 +128,7 @@ async function handleCreateMapTour(
 
   if (!admin && pointCount > FREE_MAP_TOUR_POINT_LIMIT) {
     sendJson(response, 402, {
-      error: `Free Map Tours can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points. Buy a ${MAP_TOUR_CREDIT_PRICE_LABEL} point credit to unlock ${PAID_MAP_TOUR_POINT_BLOCK}.`,
+      error: `Map Tours can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points.`,
     });
     return;
   }
