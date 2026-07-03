@@ -1,33 +1,15 @@
-import {
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+const {
   createStripeClient,
   errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   readRawBody,
   sendJson,
-  type ApiRequest,
-  type ApiResponse,
-} from "../_utils";
+} = require("./runtime.js");
 
-type SyncPayload = {
-  sessionId?: string;
-};
-
-export default async function handler(
-  request: ApiRequest,
-  response: ApiResponse,
-) {
-  try {
-    await handleCreditSync(request, response);
-  } catch (error) {
-    console.error("billing/map-tour-credit-sync handler failed:", error);
-    sendJson(response, 500, {
-      error: errorMessage(error, "Credit sync failed unexpectedly."),
-    });
-  }
-}
-
-async function handleCreditSync(request: ApiRequest, response: ApiResponse) {
+async function handleCreditSync(request, response) {
   if (request.method !== "POST") {
     sendJson(response, 405, { error: "Method not allowed." });
     return;
@@ -54,11 +36,11 @@ async function handleCreditSync(request: ApiRequest, response: ApiResponse) {
     return;
   }
 
-  let payload: SyncPayload = {};
+  let payload = {};
 
   try {
     const body = await readRawBody(request);
-    payload = JSON.parse(String(body || "{}")) as SyncPayload;
+    payload = JSON.parse(String(body || "{}"));
   } catch {
     sendJson(response, 400, { error: "Invalid request body." });
     return;
@@ -125,3 +107,14 @@ async function handleCreditSync(request: ApiRequest, response: ApiResponse) {
 
   sendJson(response, 200, { purchases: purchases ?? [] });
 }
+
+module.exports = async function handler(request, response) {
+  try {
+    await handleCreditSync(request, response);
+  } catch (error) {
+    console.error("billing/map-tour-credit-sync handler failed:", error);
+    sendJson(response, 500, {
+      error: errorMessage(error, "Credit sync failed unexpectedly."),
+    });
+  }
+};

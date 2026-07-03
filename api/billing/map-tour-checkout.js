@@ -1,4 +1,6 @@
-import {
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+const {
   createStripeClient,
   errorMessage,
   getAdminClient,
@@ -7,32 +9,9 @@ import {
   getRequestOrigin,
   readRawBody,
   sendJson,
-  type ApiRequest,
-  type ApiResponse,
-} from "../_utils";
+} = require("./runtime.js");
 
-type CheckoutPayload = {
-  creditType?: string;
-};
-
-export default async function handler(
-  request: ApiRequest,
-  response: ApiResponse,
-) {
-  try {
-    await handleMapTourCheckout(request, response);
-  } catch (error) {
-    console.error("billing/map-tour-checkout handler failed:", error);
-    sendJson(response, 500, {
-      error: errorMessage(error, "Checkout failed unexpectedly."),
-    });
-  }
-}
-
-async function handleMapTourCheckout(
-  request: ApiRequest,
-  response: ApiResponse,
-) {
+async function handleMapTourCheckout(request, response) {
   if (request.method !== "POST") {
     sendJson(response, 405, { error: "Method not allowed." });
     return;
@@ -53,17 +32,7 @@ async function handleMapTourCheckout(
     return;
   }
 
-  let stripe;
-
-  try {
-    stripe = createStripeClient();
-  } catch (error) {
-    sendJson(response, 500, {
-      error: errorMessage(error, "Stripe is not configured."),
-    });
-    return;
-  }
-
+  const stripe = createStripeClient();
   const stripeConfig = getMapTourStripeConfig();
 
   if (!stripe || !stripeConfig) {
@@ -71,11 +40,11 @@ async function handleMapTourCheckout(
     return;
   }
 
-  let payload: CheckoutPayload = {};
+  let payload = {};
 
   try {
     const body = await readRawBody(request);
-    payload = JSON.parse(String(body || "{}")) as CheckoutPayload;
+    payload = JSON.parse(String(body || "{}"));
   } catch {
     sendJson(response, 400, { error: "Invalid request body." });
     return;
@@ -86,13 +55,11 @@ async function handleMapTourCheckout(
     return;
   }
 
-  const { data: profileResult } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
     .select("stripe_customer_id")
     .eq("id", user.id)
     .maybeSingle();
-  const profile = profileResult as { stripe_customer_id: string | null } | null;
-
   let customerId = profile?.stripe_customer_id ?? null;
 
   if (!customerId) {
@@ -155,3 +122,14 @@ async function handleMapTourCheckout(
 
   sendJson(response, 200, { url: session.url });
 }
+
+module.exports = async function handler(request, response) {
+  try {
+    await handleMapTourCheckout(request, response);
+  } catch (error) {
+    console.error("billing/map-tour-checkout handler failed:", error);
+    sendJson(response, 500, {
+      error: errorMessage(error, "Checkout failed unexpectedly."),
+    });
+  }
+};
