@@ -1,22 +1,13 @@
-import Stripe from "stripe";
-import type { Json } from "../../src/lib/database.types";
-import {
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+const {
   createStripeClient,
-  createSupabaseAdminClient,
+  getAdminClient,
   readRawBody,
   sendJson,
-  type ApiRequest,
-  type ApiResponse,
-} from "../_utils";
+} = require("../billing/runtime.js");
 
-function objectId(
-  value:
-    | string
-    | { id?: string }
-    | Stripe.DeletedCustomer
-    | Stripe.Customer
-    | null,
-) {
+function objectId(value) {
   if (!value) {
     return null;
   }
@@ -24,14 +15,14 @@ function objectId(
   return typeof value === "string" ? value : value.id ?? null;
 }
 
-function periodEnd(subscription: Stripe.Subscription) {
+function periodEnd(subscription) {
   const currentPeriodEnd = subscription.items.data[0]?.current_period_end;
   return currentPeriodEnd
     ? new Date(currentPeriodEnd * 1000).toISOString()
     : null;
 }
 
-function stringId(value: unknown) {
+function stringId(value) {
   if (!value) {
     return null;
   }
@@ -41,43 +32,46 @@ function stringId(value: unknown) {
   }
 
   if (typeof value === "object" && "id" in value) {
-    const id = (value as { id?: unknown }).id;
-    return typeof id === "string" ? id : null;
+    return typeof value.id === "string" ? value.id : null;
   }
 
   return null;
 }
 
-async function userIdForCustomer(customerId: string) {
-  const supabase = createSupabaseAdminClient();
+function adminClient() {
+  const { supabase } = getAdminClient();
+  return supabase;
+}
+
+async function userIdForCustomer(customerId) {
+  const supabase = adminClient();
 
   if (!supabase) {
     return null;
   }
 
-  const { data: profileResult } = await supabase
+  const { data } = await supabase
     .from("profiles")
     .select("id")
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
-  const data = profileResult as { id: string } | null;
 
   return data?.id ?? null;
 }
 
-async function recordBillingEvent(event: Stripe.Event) {
-  const supabase = createSupabaseAdminClient();
+async function recordBillingEvent(event) {
+  const supabase = adminClient();
 
   if (!supabase) {
     return;
   }
 
-  const object = event.data.object as unknown as Record<string, unknown>;
+  const object = event.data.object ?? {};
   const customerId = stringId(object.customer);
   const subscriptionId = stringId(object.subscription) ?? stringId(object.id);
   const metadata =
     typeof object.metadata === "object" && object.metadata !== null
-      ? (object.metadata as Record<string, unknown>)
+      ? object.metadata
       : {};
   const metadataUserId =
     typeof metadata.supabase_user_id === "string"
@@ -89,7 +83,7 @@ async function recordBillingEvent(event: Stripe.Event) {
   await supabase.from("billing_events").upsert(
     {
       event_type: event.type,
-      payload: event as unknown as Json,
+      payload: event,
       stripe_customer_id: customerId,
       stripe_event_id: event.id,
       stripe_subscription_id: subscriptionId,
@@ -99,8 +93,8 @@ async function recordBillingEvent(event: Stripe.Event) {
   );
 }
 
-async function syncSubscription(subscription: Stripe.Subscription) {
-  const supabase = createSupabaseAdminClient();
+async function syncSubscription(subscription) {
+  const supabase = adminClient();
 
   if (!supabase) {
     return;
@@ -147,8 +141,8 @@ async function syncSubscription(subscription: Stripe.Subscription) {
     .eq("id", userId);
 }
 
-async function syncCheckoutSession(session: Stripe.Checkout.Session) {
-  const supabase = createSupabaseAdminClient();
+async function syncCheckoutSession(session) {
+  const supabase = adminClient();
   const stripe = createStripeClient();
 
   if (!supabase || !stripe) {
@@ -184,7 +178,7 @@ async function syncCheckoutSession(session: Stripe.Checkout.Session) {
 
     await supabase.from("map_tour_purchases").upsert(
       {
-        credit_type: creditType,
+        credit_type: "tour",
         map_app_id: null,
         status: session.payment_status || session.status || "pending",
         stripe_checkout_session_id: session.id,
@@ -196,10 +190,7 @@ async function syncCheckoutSession(session: Stripe.Checkout.Session) {
   }
 }
 
-export default async function handler(
-  request: ApiRequest,
-  response: ApiResponse,
-) {
+module.exports = async function handler(request, response) {
   if (request.method !== "POST") {
     sendJson(response, 405, { error: "Method not allowed." });
     return;
@@ -223,7 +214,7 @@ export default async function handler(
     return;
   }
 
-  let event: Stripe.Event;
+  let event;
 
   try {
     const body = await readRawBody(request);
@@ -251,4 +242,4 @@ export default async function handler(
   await recordBillingEvent(event);
 
   sendJson(response, 200, { received: true });
-}
+};
