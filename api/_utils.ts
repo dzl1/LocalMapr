@@ -7,7 +7,7 @@ import {
 } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import type { Database } from "../src/lib/database.types";
-import { nodeRealtimeOptions } from "../src/lib/supabase/nodeRealtime";
+import { getNodeRealtimeOptions } from "../src/lib/supabase/nodeRealtime";
 
 export type ApiRequest = IncomingMessage & {
   method?: string;
@@ -167,7 +167,7 @@ export function createSupabaseAdminClient():
       autoRefreshToken: false,
       persistSession: false,
     },
-    realtime: nodeRealtimeOptions,
+    realtime: getNodeRealtimeOptions(),
   });
 }
 
@@ -246,7 +246,7 @@ export async function getAuthenticatedUser(request: ApiRequest) {
       autoRefreshToken: false,
       persistSession: false,
     },
-    realtime: nodeRealtimeOptions,
+    realtime: getNodeRealtimeOptions(),
   });
   const { data, error } = await supabase.auth.getUser(token);
 
