@@ -1,4 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   createClient,
   type SupabaseClient,
@@ -29,6 +31,66 @@ function isUserEmailVerified(user?: EmailVerificationUser | null) {
 }
 
 const realtimeTransport = WebSocket as unknown as WebSocketLikeConstructor;
+let cachedFileEnv: Record<string, string> | null = null;
+
+function parseEnvFile(content: string) {
+  const result: Record<string, string> = {};
+
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+
+    const equalsIndex = line.indexOf("=");
+
+    if (equalsIndex <= 0) {
+      continue;
+    }
+
+    const key = line.slice(0, equalsIndex).trim();
+    let value = line.slice(equalsIndex + 1).trim();
+
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    result[key] = value;
+  }
+
+  return result;
+}
+
+function readLocalEnvFile() {
+  if (cachedFileEnv) {
+    return cachedFileEnv;
+  }
+
+  const candidatePaths = [
+    resolve(process.cwd(), ".env"),
+    resolve(process.cwd(), ".env.local"),
+  ];
+
+  for (const filePath of candidatePaths) {
+    if (!existsSync(filePath)) {
+      continue;
+    }
+
+    cachedFileEnv = parseEnvFile(readFileSync(filePath, "utf8"));
+    return cachedFileEnv;
+  }
+
+  cachedFileEnv = {};
+  return cachedFileEnv;
+}
+
+function getEnv(name: string) {
+  return process.env[name] ?? readLocalEnvFile()[name] ?? null;
+}
 
 export function sendJson(
   response: ApiResponse,
@@ -45,7 +107,7 @@ export function errorMessage(error: unknown, fallback: string) {
 }
 
 export function getAppBaseUrl(requestUrl?: string) {
-  const configuredUrl = process.env.VITE_APP_URL;
+  const configuredUrl = getEnv("VITE_APP_URL");
 
   if (configuredUrl) {
     return configuredUrl.replace(/\/$/, "");
@@ -60,8 +122,8 @@ export function getAppBaseUrl(requestUrl?: string) {
 }
 
 export function getSupabaseConfig() {
-  const url = process.env.VITE_SUPABASE_URL;
-  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  const url = getEnv("VITE_SUPABASE_URL");
+  const anonKey = getEnv("VITE_SUPABASE_ANON_KEY");
 
   if (!url || !anonKey) {
     return null;
@@ -79,9 +141,9 @@ export function getSupabaseConfig() {
 export function getSupabaseAdminConfig() {
   const publicConfig = getSupabaseConfig();
   const serviceRoleKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    process.env.SUPABASE_SERVICE_KEY ??
-    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    getEnv("SUPABASE_SERVICE_ROLE_KEY") ??
+    getEnv("SUPABASE_SERVICE_KEY") ??
+    getEnv("VITE_SUPABASE_SERVICE_ROLE_KEY");
 
   if (!publicConfig || !serviceRoleKey) {
     return null;
@@ -111,12 +173,12 @@ export function createSupabaseAdminClient():
 }
 
 function getStripeSecretKey() {
-  return process.env.STRIPE_SECRET_KEY ?? null;
+  return getEnv("STRIPE_SECRET_KEY");
 }
 
 export function getStripeConfig() {
   const secretKey = getStripeSecretKey();
-  const priceId = process.env.STRIPE_PRO_PRICE_ID;
+  const priceId = getEnv("STRIPE_PRO_PRICE_ID");
 
   if (!secretKey || !priceId) {
     return null;
@@ -127,8 +189,8 @@ export function getStripeConfig() {
 
 export function getMapTourStripeConfig() {
   const secretKey = getStripeSecretKey();
-  const tourCreditPriceId = process.env.STRIPE_MAP_TOUR_CREDIT_PRICE_ID;
-  const pointUpgradePriceId = process.env.STRIPE_MAP_POINT_UPGRADE_PRICE_ID;
+  const tourCreditPriceId = getEnv("STRIPE_MAP_TOUR_CREDIT_PRICE_ID");
+  const pointUpgradePriceId = getEnv("STRIPE_MAP_POINT_UPGRADE_PRICE_ID");
 
   if (!secretKey || !tourCreditPriceId || !pointUpgradePriceId) {
     return null;
