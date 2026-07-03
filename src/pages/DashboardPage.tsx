@@ -248,7 +248,11 @@ export function DashboardPage() {
 
   useEffect(() => {
     document.title = "Dashboard | LocalMapr";
-    void loadDashboard();
+    // On a successful checkout return, the checkout effect below owns the
+    // reload so the freshly synced credit is not clobbered by a racing read.
+    if (searchParams.get("checkout") !== "success") {
+      void loadDashboard();
+    }
   }, []);
 
   useEffect(() => {
@@ -306,6 +310,9 @@ export function DashboardPage() {
           }
 
           setPurchases(payload.purchases);
+          // Reload the rest of the dashboard from the database. The admin
+          // upsert has committed, so this read reflects the new credit.
+          await loadDashboard();
           setMessage("Checkout completed. Your Map Tour credits were updated.");
         } catch (syncError) {
           await loadDashboard();
