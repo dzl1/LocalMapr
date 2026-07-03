@@ -20,6 +20,20 @@ export default async function handler(
   request: ApiRequest,
   response: ApiResponse,
 ) {
+  try {
+    await handleMapTourCheckout(request, response);
+  } catch (error) {
+    console.error("billing/map-tour-checkout handler failed:", error);
+    sendJson(response, 500, {
+      error: errorMessage(error, "Checkout failed unexpectedly."),
+    });
+  }
+}
+
+async function handleMapTourCheckout(
+  request: ApiRequest,
+  response: ApiResponse,
+) {
   if (request.method !== "POST") {
     sendJson(response, 405, { error: "Method not allowed." });
     return;

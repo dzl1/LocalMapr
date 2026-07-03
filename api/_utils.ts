@@ -107,15 +107,18 @@ export function errorMessage(error: unknown, fallback: string) {
 }
 
 export function getAppBaseUrl(requestUrl?: string) {
+  if (requestUrl) {
+    try {
+      return new URL(requestUrl).origin;
+    } catch {
+      // Fall through to configured URL when the request URL is unusable.
+    }
+  }
+
   const configuredUrl = getEnv("VITE_APP_URL");
 
   if (configuredUrl) {
     return configuredUrl.replace(/\/$/, "");
-  }
-
-  if (requestUrl) {
-    const url = new URL(requestUrl);
-    return url.origin;
   }
 
   return "http://localhost:3000";

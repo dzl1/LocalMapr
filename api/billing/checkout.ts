@@ -14,6 +14,17 @@ export default async function handler(
   request: ApiRequest,
   response: ApiResponse,
 ) {
+  try {
+    await handleCheckout(request, response);
+  } catch (error) {
+    console.error("billing/checkout handler failed:", error);
+    sendJson(response, 500, {
+      error: errorMessage(error, "Checkout failed unexpectedly."),
+    });
+  }
+}
+
+async function handleCheckout(request: ApiRequest, response: ApiResponse) {
   if (request.method !== "POST") {
     sendJson(response, 405, { error: "Method not allowed." });
     return;
