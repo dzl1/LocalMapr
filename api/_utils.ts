@@ -173,17 +173,6 @@ function getStripeSecretKey() {
   return getEnv("STRIPE_SECRET_KEY");
 }
 
-export function getStripeConfig() {
-  const secretKey = getStripeSecretKey();
-  const priceId = getEnv("STRIPE_PRO_PRICE_ID");
-
-  if (!secretKey || !priceId) {
-    return null;
-  }
-
-  return { priceId, secretKey };
-}
-
 export function getMapTourStripeConfig() {
   const secretKey = getStripeSecretKey();
   const tourCreditPriceId = getEnv("STRIPE_MAP_TOUR_CREDIT_PRICE_ID");

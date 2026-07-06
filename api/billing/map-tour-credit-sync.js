@@ -9,6 +9,29 @@ const {
   sendJson,
 } = require("./runtime.js");
 
+function objectId(value) {
+  if (!value) {
+    return null;
+  }
+
+  return typeof value === "string" ? value : value.id ?? null;
+}
+
+function paidCreditStatus(session) {
+  if (session.payment_status === "paid") {
+    return "paid";
+  }
+
+  if (
+    session.payment_status === "no_payment_required" &&
+    session.status === "complete"
+  ) {
+    return "completed";
+  }
+
+  return null;
+}
+
 async function handleCreditSync(request, response) {
   if (request.method !== "POST") {
     sendJson(response, 405, { error: "Method not allowed." });
@@ -72,19 +95,36 @@ async function handleCreditSync(request, response) {
     return;
   }
 
-  if (session.payment_status !== "paid") {
+  const status = paidCreditStatus(session);
+
+  if (!status) {
     sendJson(response, 409, { error: "Checkout session is not paid yet." });
     return;
   }
 
+  const customerId = objectId(session.customer);
   const paymentIntentId =
     typeof session.payment_intent === "string" ? session.payment_intent : null;
+
+  if (customerId) {
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ stripe_customer_id: customerId })
+      .eq("id", user.id);
+
+    if (profileError) {
+      sendJson(response, 500, {
+        error: profileError.message || "Stripe customer could not be recorded.",
+      });
+      return;
+    }
+  }
 
   const { error: upsertError } = await supabase.from("map_tour_purchases").upsert(
     {
       credit_type: "tour",
       map_app_id: null,
-      status: session.payment_status || session.status || "paid",
+      status,
       stripe_checkout_session_id: session.id,
       stripe_payment_intent_id: paymentIntentId,
       user_id: user.id,
@@ -99,11 +139,18 @@ async function handleCreditSync(request, response) {
     return;
   }
 
-  const { data: purchases } = await supabase
+  const { data: purchases, error: purchasesError } = await supabase
     .from("map_tour_purchases")
     .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  if (purchasesError) {
+    sendJson(response, 500, {
+      error: purchasesError.message || "Map Tour credits could not be loaded.",
+    });
+    return;
+  }
 
   sendJson(response, 200, { purchases: purchases ?? [] });
 }

@@ -48,17 +48,6 @@ export function getStripeSecretKey() {
   return process.env.STRIPE_SECRET_KEY ?? null;
 }
 
-export function getStripeConfig() {
-  const secretKey = getStripeSecretKey();
-  const priceId = process.env.STRIPE_PRO_PRICE_ID;
-
-  if (!secretKey || !priceId) {
-    return null;
-  }
-
-  return { priceId, secretKey };
-}
-
 export function getMapTourStripeConfig() {
   const secretKey = getStripeSecretKey();
   const tourCreditPriceId = process.env.STRIPE_MAP_TOUR_CREDIT_PRICE_ID;

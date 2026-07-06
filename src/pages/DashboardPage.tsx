@@ -21,10 +21,12 @@ import styles from "@/app/dashboard/dashboard.module.css";
 type MapApp = Database["public"]["Tables"]["map_apps"]["Row"];
 type MapTourPurchase =
   Database["public"]["Tables"]["map_tour_purchases"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 const defaultCenter: [number, number] = [-35.205, 173.95];
 const defaultZoom = 11;
+type DashboardLoadOptions = {
+  syncedPurchases?: MapTourPurchase[];
+};
 
 const appTypeLabels: Record<string, string> = {
   field_app: "Field app",
@@ -39,17 +41,6 @@ function TrashIcon() {
       <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
     </svg>
   );
-}
-
-function formatStatus(status?: string | null) {
-  if (!status || status === "free") {
-    return "Free";
-  }
-
-  return status
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 function slugify(value: string) {
@@ -167,7 +158,6 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [apps, setApps] = useState<MapApp[]>([]);
   const [purchases, setPurchases] = useState<MapTourPurchase[]>([]);
   const [createType, setCreateType] = useState("map_tour");
@@ -180,7 +170,7 @@ export function DashboardPage() {
   const [deletingAppId, setDeletingAppId] = useState<string | null>(null);
   const hasSupabase = Boolean(getSupabaseBrowserConfig());
 
-  async function loadDashboard() {
+  async function loadDashboard(options: DashboardLoadOptions = {}) {
     if (!hasSupabase) {
       setLoading(false);
       return;
@@ -207,41 +197,44 @@ export function DashboardPage() {
 
     setUser(currentUser);
 
-    const [
-      { data: profileData },
-      { data: appsData },
-      { data: purchasesData, error: purchasesError },
-      { data: adminRecord },
-    ] =
-      await Promise.all([
-        supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", currentUser.id)
-          .maybeSingle(),
-        supabase
-          .from("map_apps")
-          .select("*")
-          .eq("owner_id", currentUser.id)
-          .order("updated_at", { ascending: false }),
-        supabase
+    const purchasesRequest = options.syncedPurchases
+      ? Promise.resolve({ data: options.syncedPurchases, error: null })
+      : supabase
           .from("map_tour_purchases")
           .select("*")
           .eq("user_id", currentUser.id)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("super_admins")
-          .select("id")
-          .eq("email", currentUser.email?.toLowerCase() ?? "")
-          .eq("is_active", true)
-          .maybeSingle(),
-      ]);
+          .order("created_at", { ascending: false });
 
-    setProfile(profileData);
+    const [
+      { data: appsData },
+      { data: purchasesData, error: purchasesError },
+      { data: adminRecord },
+    ] = await Promise.all([
+      supabase
+        .from("map_apps")
+        .select("*")
+        .eq("owner_id", currentUser.id)
+        .order("updated_at", { ascending: false }),
+      purchasesRequest,
+      supabase
+        .from("super_admins")
+        .select("id")
+        .eq("email", currentUser.email?.toLowerCase() ?? "")
+        .eq("is_active", true)
+        .maybeSingle(),
+    ]);
+
     setApps(appsData ?? []);
-    setPurchases(
-      isMissingMapTourPurchasesTable(purchasesError) ? [] : purchasesData ?? [],
-    );
+    if (purchasesError && !isMissingMapTourPurchasesTable(purchasesError)) {
+      setError(
+        purchasesError.message ||
+          "Map Tour credits could not be loaded. Please refresh the dashboard.",
+      );
+    } else {
+      setPurchases(
+        isMissingMapTourPurchasesTable(purchasesError) ? [] : purchasesData ?? [],
+      );
+    }
     setIsAdmin(Boolean(adminRecord));
     setLoading(false);
   }
@@ -267,17 +260,28 @@ export function DashboardPage() {
 
     if (checkout === "success") {
       const sessionId = searchParams.get("session_id");
+      const credit = searchParams.get("credit");
       const next = new URLSearchParams(searchParams);
       next.delete("checkout");
       next.delete("credit");
       next.delete("session_id");
       setSearchParams(next, { replace: true });
-      setMessage("Checkout completed. Updating your Map Tour credits...");
+      setMessage(
+        credit === "tour"
+          ? "Checkout completed. Updating your Map Tour credits..."
+          : "Checkout completed.",
+      );
 
       void (async () => {
-        if (!sessionId) {
+        if (credit !== "tour") {
           await loadDashboard();
           setMessage("Checkout completed.");
+          return;
+        }
+
+        if (!sessionId) {
+          await loadDashboard();
+          setError("Checkout completed, but Stripe did not return a session ID.");
           return;
         }
 
@@ -311,8 +315,9 @@ export function DashboardPage() {
 
           setPurchases(payload.purchases);
           // Reload the rest of the dashboard from the database. The admin
-          // upsert has committed, so this read reflects the new credit.
-          await loadDashboard();
+          // upsert has committed; keep the server-returned credit list so it
+          // cannot be replaced by a racing client-side read.
+          await loadDashboard({ syncedPurchases: payload.purchases });
           setMessage("Checkout completed. Your Map Tour credits were updated.");
         } catch (syncError) {
           await loadDashboard();
@@ -423,22 +428,6 @@ export function DashboardPage() {
     navigate("/");
   }
 
-  async function handleBilling(path: string) {
-    setBillingPending(true);
-    setError("");
-
-    try {
-      await startBillingFlow(path);
-    } catch (billingError) {
-      setError(
-        billingError instanceof Error
-          ? billingError.message
-          : "Billing could not be started.",
-      );
-      setBillingPending(false);
-    }
-  }
-
   async function handleMapTourCheckout(creditType: "tour") {
     setBillingPending(true);
     setError("");
@@ -520,11 +509,6 @@ export function DashboardPage() {
     );
   }
 
-  const planStatus = profile?.subscription_status ?? "free";
-  const isPaid =
-    planStatus === "active" ||
-    planStatus === "trialing" ||
-    planStatus === "past_due";
   const mapTourApps = apps.filter((app) => app.app_type === "map_tour");
   const unusedTourCredits = getUnusedTourCreditCount(purchases);
 
@@ -562,28 +546,9 @@ export function DashboardPage() {
         </div>
         {!isAdmin ? (
           <div className={styles.planPanel}>
-            <span>Plan</span>
-            <strong>{formatStatus(planStatus)}</strong>
-            <p>
-              {isPaid
-                ? "Your paid workspace is enabled."
-                : "Start on the free workspace, then upgrade when you are ready."}
-            </p>
-            <button
-              disabled={billingPending}
-              type="button"
-              onClick={() =>
-                handleBilling(
-                  isPaid ? "/api/billing/portal" : "/api/billing/checkout",
-                )
-              }
-            >
-              {billingPending
-                ? "Opening..."
-                : isPaid
-                  ? "Manage billing"
-                  : "Upgrade"}
-            </button>
+            <span>Credits</span>
+            <strong>{unusedTourCredits}</strong>
+            <p>Buy one-time Map Tour credits after your free tours are used.</p>
             <small>
               Map Tour credits: {unusedTourCredits} available. Free Map Tours: {Math.max(0, FREE_MAP_TOUR_LIMIT - mapTourApps.length)} remaining.
             </small>
@@ -675,7 +640,7 @@ export function DashboardPage() {
                     ) : null}
                   </div>
                   <div className={styles.appMeta}>
-                    <strong>{formatStatus(app.status)}</strong>
+                    <strong>{app.status}</strong>
                     <code>/{app.slug}</code>
                     <button
                       type="button"

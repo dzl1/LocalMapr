@@ -240,6 +240,25 @@ function getMapTourStripeConfig() {
   return { secretKey, tourCreditPriceId };
 }
 
+function getStripeWebhookSecret() {
+  return getEnv("STRIPE_WEBHOOK_SECRET");
+}
+
+async function assertStripeOneTimePrice(stripe, priceId, envName) {
+  const price = await stripe.prices.retrieve(priceId);
+  const isRecurring = Boolean(price.recurring) || price.type === "recurring";
+
+  if (!price.active) {
+    throw new Error(`${envName} points to an inactive Stripe Price.`);
+  }
+
+  if (isRecurring) {
+    throw new Error(`${envName} must point to a one-time payment Price.`);
+  }
+
+  return price;
+}
+
 async function readRawBody(request) {
   const chunks = [];
 
@@ -251,12 +270,14 @@ async function readRawBody(request) {
 }
 
 module.exports = {
+  assertStripeOneTimePrice,
   createStripeClient,
   errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   getMapTourStripeConfig,
   getRequestOrigin,
+  getStripeWebhookSecret,
   readRawBody,
   sendJson,
 };

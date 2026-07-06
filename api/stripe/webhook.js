@@ -3,6 +3,7 @@
 const {
   createStripeClient,
   getAdminClient,
+  getStripeWebhookSecret,
   readRawBody,
   sendJson,
 } = require("../billing/runtime.js");
@@ -43,6 +44,21 @@ function adminClient() {
   return supabase;
 }
 
+function paidCreditStatus(session) {
+  if (session.payment_status === "paid") {
+    return "paid";
+  }
+
+  if (
+    session.payment_status === "no_payment_required" &&
+    session.status === "complete"
+  ) {
+    return "completed";
+  }
+
+  return null;
+}
+
 async function userIdForCustomer(customerId) {
   const supabase = adminClient();
 
@@ -80,7 +96,7 @@ async function recordBillingEvent(event) {
   const userId =
     metadataUserId ?? (customerId ? await userIdForCustomer(customerId) : null);
 
-  await supabase.from("billing_events").upsert(
+  const { error } = await supabase.from("billing_events").upsert(
     {
       event_type: event.type,
       payload: event,
@@ -91,16 +107,24 @@ async function recordBillingEvent(event) {
     },
     { onConflict: "stripe_event_id" },
   );
+
+  if (error) {
+    throw new Error(error.message || "Billing event could not be recorded.");
+  }
 }
 
-async function syncSubscription(subscription) {
+async function syncSubscription(
+  subscription,
+  options = { fallbackCustomerId: null, fallbackUserId: null },
+) {
   const supabase = adminClient();
 
   if (!supabase) {
     return;
   }
 
-  const customerId = objectId(subscription.customer);
+  const customerId =
+    objectId(subscription.customer) ?? options.fallbackCustomerId ?? null;
 
   if (!customerId) {
     return;
@@ -108,6 +132,7 @@ async function syncSubscription(subscription) {
 
   const userId =
     subscription.metadata.supabase_user_id ??
+    options.fallbackUserId ??
     (await userIdForCustomer(customerId));
 
   if (!userId) {
@@ -118,7 +143,7 @@ async function syncSubscription(subscription) {
   const priceId = item?.price.id ?? null;
   const currentPeriodEnd = periodEnd(subscription);
 
-  await supabase.from("subscriptions").upsert(
+  const { error: subscriptionError } = await supabase.from("subscriptions").upsert(
     {
       current_period_end: currentPeriodEnd,
       price_id: priceId,
@@ -130,7 +155,11 @@ async function syncSubscription(subscription) {
     { onConflict: "stripe_subscription_id" },
   );
 
-  await supabase
+  if (subscriptionError) {
+    throw new Error(subscriptionError.message || "Subscription could not be recorded.");
+  }
+
+  const { error: profileError } = await supabase
     .from("profiles")
     .update({
       current_period_end: currentPeriodEnd,
@@ -139,6 +168,10 @@ async function syncSubscription(subscription) {
       subscription_status: subscription.status,
     })
     .eq("id", userId);
+
+  if (profileError) {
+    throw new Error(profileError.message || "Profile subscription could not be recorded.");
+  }
 }
 
 async function syncCheckoutSession(session) {
@@ -153,40 +186,52 @@ async function syncCheckoutSession(session) {
   const customerId = objectId(session.customer);
 
   if (userId && customerId) {
-    await supabase
+    const { error: profileError } = await supabase
       .from("profiles")
       .update({
         stripe_customer_id: customerId,
       })
       .eq("id", userId);
+
+    if (profileError) {
+      throw new Error(profileError.message || "Stripe customer could not be recorded.");
+    }
   }
 
   if (typeof session.subscription === "string") {
     const subscription = await stripe.subscriptions.retrieve(
       session.subscription,
     );
-    await syncSubscription(subscription);
+    await syncSubscription(subscription, {
+      fallbackCustomerId: customerId,
+      fallbackUserId: userId ?? null,
+    });
   }
 
   const creditType = session.metadata?.credit_type;
+  const status = paidCreditStatus(session);
 
-  if (userId && creditType === "tour") {
+  if (userId && creditType === "tour" && status) {
     const paymentIntentId =
       typeof session.payment_intent === "string"
         ? session.payment_intent
         : null;
 
-    await supabase.from("map_tour_purchases").upsert(
+    const { error: purchaseError } = await supabase.from("map_tour_purchases").upsert(
       {
         credit_type: "tour",
         map_app_id: null,
-        status: session.payment_status || session.status || "pending",
+        status,
         stripe_checkout_session_id: session.id,
         stripe_payment_intent_id: paymentIntentId,
         user_id: userId,
       },
       { onConflict: "stripe_checkout_session_id" },
     );
+
+    if (purchaseError) {
+      throw new Error(purchaseError.message || "Map Tour credit could not be recorded.");
+    }
   }
 }
 
@@ -197,7 +242,7 @@ module.exports = async function handler(request, response) {
   }
 
   const stripe = createStripeClient();
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = getStripeWebhookSecret();
 
   if (!stripe || !webhookSecret) {
     sendJson(response, 500, { error: "Stripe webhook is not configured." });
@@ -225,21 +270,29 @@ module.exports = async function handler(request, response) {
     return;
   }
 
-  switch (event.type) {
-    case "checkout.session.completed":
-    case "checkout.session.async_payment_succeeded":
-      await syncCheckoutSession(event.data.object);
-      break;
-    case "customer.subscription.created":
-    case "customer.subscription.updated":
-    case "customer.subscription.deleted":
-      await syncSubscription(event.data.object);
-      break;
-    default:
-      break;
-  }
+  try {
+    switch (event.type) {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded":
+        await syncCheckoutSession(event.data.object);
+        break;
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted":
+        await syncSubscription(event.data.object);
+        break;
+      default:
+        break;
+    }
 
-  await recordBillingEvent(event);
+    await recordBillingEvent(event);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Stripe webhook could not be processed.";
+    console.error("stripe/webhook handler failed:", error);
+    sendJson(response, 500, { error: message });
+    return;
+  }
 
   sendJson(response, 200, { received: true });
 };

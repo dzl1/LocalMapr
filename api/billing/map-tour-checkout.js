@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 const {
+  assertStripeOneTimePrice,
   createStripeClient,
   errorMessage,
   getAdminClient,
@@ -52,6 +53,19 @@ async function handleMapTourCheckout(request, response) {
 
   if (payload.creditType && payload.creditType !== "tour") {
     sendJson(response, 400, { error: "Point upgrades are not available." });
+    return;
+  }
+
+  try {
+    await assertStripeOneTimePrice(
+      stripe,
+      stripeConfig.tourCreditPriceId,
+      "STRIPE_MAP_TOUR_CREDIT_PRICE_ID",
+    );
+  } catch (error) {
+    sendJson(response, 500, {
+      error: errorMessage(error, "Map Tour credit Price is not configured correctly."),
+    });
     return;
   }
 
