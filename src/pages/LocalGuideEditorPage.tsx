@@ -45,6 +45,18 @@ type GuideConfig = {
   zoom: number;
 };
 
+type RouteDistanceLabel = {
+  id: string;
+  label: string;
+  meters: number;
+  position: [number, number];
+};
+
+type RouteResult = {
+  labels: RouteDistanceLabel[];
+  path: Array<[number, number]>;
+};
+
 const defaultCenter: [number, number] = [-35.205, 173.95];
 const defaultZoom = 11;
 const colors = ["#1f4834", "#2563eb", "#be123c", "#b45309", "#6d28d9"];
@@ -216,6 +228,163 @@ function createStopIcon(index: number, color: string, active: boolean) {
     iconAnchor: [20, 20],
     iconSize: [40, 40],
     popupAnchor: [0, -20],
+  });
+}
+
+function createDistanceIcon(label: string) {
+  return L.divIcon({
+    className: styles.routeDistanceIcon,
+    html: `<span>${escapeHtml(label)}</span>`,
+    iconAnchor: [45, 14],
+    iconSize: [90, 28],
+  });
+}
+
+function measureDistanceMeters(start: [number, number], end: [number, number]) {
+  const earthRadiusMeters = 6371000;
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const lat1 = toRadians(start[0]);
+  const lat2 = toRadians(end[0]);
+  const deltaLat = toRadians(end[0] - start[0]);
+  const deltaLng = toRadians(end[1] - start[1]);
+  const halfChord =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+
+  return earthRadiusMeters * 2 * Math.atan2(Math.sqrt(halfChord), Math.sqrt(1 - halfChord));
+}
+
+function formatDistance(meters: number) {
+  if (meters >= 10000) {
+    return `${Math.round(meters / 1000)} km`;
+  }
+
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(1)} km`;
+  }
+
+  return `${Math.max(10, Math.round(meters / 10) * 10)} m`;
+}
+
+function interpolatePosition(
+  start: [number, number],
+  end: [number, number],
+  progress: number,
+): [number, number] {
+  return [
+    start[0] + (end[0] - start[0]) * progress,
+    start[1] + (end[1] - start[1]) * progress,
+  ];
+}
+
+function getPathDistanceMeters(path: Array<[number, number]>) {
+  return path.reduce((total, point, index) => {
+    if (index === 0) {
+      return total;
+    }
+
+    return total + measureDistanceMeters(path[index - 1], point);
+  }, 0);
+}
+
+function getPathMidpoint(path: Array<[number, number]>): [number, number] | null {
+  if (!path.length) {
+    return null;
+  }
+
+  if (path.length === 1) {
+    return path[0];
+  }
+
+  const halfDistance = getPathDistanceMeters(path) / 2;
+  if (halfDistance <= 0) {
+    return path[Math.floor(path.length / 2)];
+  }
+
+  let traversed = 0;
+  for (let index = 1; index < path.length; index += 1) {
+    const segmentStart = path[index - 1];
+    const segmentEnd = path[index];
+    const segmentDistance = measureDistanceMeters(segmentStart, segmentEnd);
+
+    if (traversed + segmentDistance >= halfDistance) {
+      const progress = segmentDistance ? (halfDistance - traversed) / segmentDistance : 0;
+      return interpolatePosition(segmentStart, segmentEnd, progress);
+    }
+
+    traversed += segmentDistance;
+  }
+
+  return path[path.length - 1];
+}
+
+function getNearestPathIndex(
+  path: Array<[number, number]>,
+  target: [number, number],
+  startIndex: number,
+) {
+  let nearestIndex = Math.min(startIndex, path.length - 1);
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  for (let index = nearestIndex; index < path.length; index += 1) {
+    const distance = measureDistanceMeters(path[index], target);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = index;
+    }
+  }
+
+  return nearestIndex;
+}
+
+function buildDistanceLabels(
+  stops: GuideStop[],
+  path: Array<[number, number]>,
+  distances: number[],
+  waypoints?: Array<[number, number]>,
+) {
+  if (stops.length < 2) {
+    return [];
+  }
+
+  const labelPath =
+    path.length >= 2 ? path : stops.map((stop) => [stop.lat, stop.lng] as [number, number]);
+  const waypointPositions =
+    waypoints?.length === stops.length
+      ? waypoints
+      : stops.map((stop) => [stop.lat, stop.lng] as [number, number]);
+  const waypointIndexes = waypointPositions.reduce<number[]>((indexes, position, index) => {
+    indexes.push(getNearestPathIndex(labelPath, position, index === 0 ? 0 : indexes[index - 1]));
+    return indexes;
+  }, []);
+
+  return stops.slice(0, -1).flatMap((stop, index) => {
+    const nextStop = stops[index + 1];
+    const startIndex = waypointIndexes[index] ?? 0;
+    const endIndex = Math.max(waypointIndexes[index + 1] ?? startIndex, startIndex + 1);
+    const segmentPath =
+      labelPath.length >= 2
+        ? labelPath.slice(startIndex, Math.min(endIndex, labelPath.length - 1) + 1)
+        : [
+            [stop.lat, stop.lng] as [number, number],
+            [nextStop.lat, nextStop.lng] as [number, number],
+          ];
+    const position =
+      getPathMidpoint(segmentPath) ??
+      interpolatePosition([stop.lat, stop.lng], [nextStop.lat, nextStop.lng], 0.5);
+    const meters =
+      Number.isFinite(distances[index]) && distances[index] > 0
+        ? distances[index]
+        : getPathDistanceMeters(segmentPath);
+
+    return [
+      {
+        id: `${stop.id}-${nextStop.id}`,
+        label: formatDistance(meters),
+        meters,
+        position,
+      },
+    ];
   });
 }
 
@@ -509,7 +678,7 @@ function RichNotesEditor({
 
 async function getDrivingRoute(stops: GuideStop[], signal: AbortSignal) {
   if (stops.length < 2) {
-    return [];
+    return { labels: [], path: [] };
   }
 
   const coordinates = stops.map((stop) => `${stop.lng},${stop.lat}`).join(";");
@@ -523,10 +692,39 @@ async function getDrivingRoute(stops: GuideStop[], signal: AbortSignal) {
   }
 
   const payload = (await response.json()) as {
-    routes?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }>;
+    routes?: Array<{
+      geometry?: { coordinates?: Array<[number, number]> };
+      legs?: Array<{ distance?: number }>;
+    }>;
+    waypoints?: Array<{ location?: [number, number] }>;
   };
-  const routeCoordinates = payload.routes?.[0]?.geometry?.coordinates ?? [];
-  return routeCoordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
+  const route = payload.routes?.[0];
+  const routeCoordinates = route?.geometry?.coordinates ?? [];
+  const path = routeCoordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
+  const distances = route?.legs?.map((leg) => leg.distance ?? 0) ?? [];
+  const waypoints = payload.waypoints
+    ?.map((waypoint) => waypoint.location)
+    .filter((location): location is [number, number] => Boolean(location))
+    .map(([lng, lat]) => [lat, lng] as [number, number]);
+
+  return {
+    labels: buildDistanceLabels(stops, path, distances, waypoints),
+    path,
+  };
+}
+
+function getFallbackRoute(stops: GuideStop[]): RouteResult {
+  const path = stops.map((stop) => [stop.lat, stop.lng] as [number, number]);
+  const distances = stops
+    .slice(0, -1)
+    .map((stop, index) =>
+      measureDistanceMeters([stop.lat, stop.lng], [stops[index + 1].lat, stops[index + 1].lng]),
+    );
+
+  return {
+    labels: buildDistanceLabels(stops, path, distances),
+    path,
+  };
 }
 
 function getShareUrls(slug: string) {
@@ -566,6 +764,7 @@ export function LocalGuideEditorPage() {
     zoom: defaultZoom,
   });
   const [routePath, setRoutePath] = useState<Array<[number, number]>>([]);
+  const [routeDistanceLabels, setRouteDistanceLabels] = useState<RouteDistanceLabel[]>([]);
   const [routeState, setRouteState] = useState<"idle" | "routing" | "fallback">("idle");
   const draggingStopIdRef = useRef<string | null>(null);
   const isDraggingStop = useCallback(() => Boolean(draggingStopIdRef.current), []);
@@ -674,6 +873,7 @@ export function LocalGuideEditorPage() {
   useEffect(() => {
     if (stops.length < 2) {
       setRoutePath([]);
+      setRouteDistanceLabels([]);
       setRouteState("idle");
       return undefined;
     }
@@ -682,15 +882,18 @@ export function LocalGuideEditorPage() {
     setRouteState("routing");
 
     void getDrivingRoute(stops, controller.signal)
-      .then((path) => {
+      .then((route) => {
         if (!controller.signal.aborted) {
-          setRoutePath(path);
+          setRoutePath(route.path);
+          setRouteDistanceLabels(route.labels);
           setRouteState("idle");
         }
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setRoutePath(stops.map((stop) => [stop.lat, stop.lng]));
+          const fallbackRoute = getFallbackRoute(stops);
+          setRoutePath(fallbackRoute.path);
+          setRouteDistanceLabels(fallbackRoute.labels);
           setRouteState("fallback");
         }
       });
@@ -929,6 +1132,16 @@ export function LocalGuideEditorPage() {
           />
         ) : null}
 
+        {routeDistanceLabels.map((distanceLabel) => (
+          <Marker
+            key={distanceLabel.id}
+            position={distanceLabel.position}
+            icon={createDistanceIcon(distanceLabel.label)}
+            interactive={false}
+            zIndexOffset={600}
+          />
+        ))}
+
         {stops.map((stop, index) => {
           const pinPopupText = stop.popupText.trim() || stop.title;
 
@@ -1163,6 +1376,15 @@ export function LocalGuideEditorPage() {
               <p>Stop editor</p>
               <h2>{selectedStop.title}</h2>
             </div>
+            <button
+              type="button"
+              className={styles.stopEditorClose}
+              onClick={() => setSelectedStopId(null)}
+              aria-label="Close stop editor"
+              title="Close stop editor"
+            >
+              &times;
+            </button>
           </div>
           <label>
             Stop title
