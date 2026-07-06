@@ -141,12 +141,19 @@
   line-height: 1.55;
 }
 
-.homePlanPanel button {
+.homePlanPanel button,
+.homePlanPanel a {
   width: 100%;
   margin-top: 18px;
   color: #ffffff;
   border: 0;
   background: #0d8f5a;
+}
+
+.homePlanPanel a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .secondaryButton {

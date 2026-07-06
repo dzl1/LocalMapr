@@ -35,6 +35,8 @@ export function Footer() {
 
         <address className={styles.contact}>
           <span>Contact</span>
+          <Link to="/pricing">Pricing</Link>
+          <Link to="/help">Help</Link>
           <a href="mailto:contact@localmapr.com">contact@localmapr.com</a>
         </address>
       </div>

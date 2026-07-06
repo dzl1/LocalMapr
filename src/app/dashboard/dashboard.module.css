@@ -135,12 +135,30 @@
 }
 
 .planPanel button,
+.planPanel a,
 .createPanel button {
   width: 100%;
   margin-top: 18px;
   color: #ffffff;
   border: 0;
   background: #0d8f5a;
+}
+
+.planPanel a,
+.createPanel .secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.createPanel .secondaryButton {
+  width: 100%;
+  margin-top: 0;
 }
 
 .secondaryButton {

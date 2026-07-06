@@ -1,0 +1,255 @@
+.page {
+  min-height: 100vh;
+  padding: 24px;
+  color: #102136;
+  background: #f6faf7;
+  font-family: var(--font-sora), Arial, Helvetica, sans-serif;
+}
+
+.header,
+.hero,
+.productGrid,
+.billingPanel,
+.workflowPanel {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 58px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  width: 296px;
+}
+
+.brandLogo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.actions a,
+.cardAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1px solid rgba(13, 143, 90, 0.28);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #086242;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 800;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease;
+}
+
+.hero {
+  padding: 64px 0 34px;
+}
+
+.hero p,
+.cardHeader p,
+.billingPanel p,
+.workflowPanel p {
+  color: #086242;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 860px;
+  margin-top: 10px;
+  font-size: clamp(42px, 7vw, 78px);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.hero span {
+  display: block;
+  max-width: 720px;
+  margin-top: 18px;
+  color: #536172;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.productGrid {
+  display: grid;
+  gap: 18px;
+  padding: 18px 0 28px;
+}
+
+.productCard,
+.billingPanel,
+.workflowPanel {
+  border: 1px solid #dfe7e6;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(16, 33, 54, 0.07);
+}
+
+.productCard {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.cardHeader h2,
+.billingPanel h2,
+.workflowPanel h2 {
+  margin-top: 7px;
+  font-size: clamp(24px, 3vw, 36px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.summary {
+  max-width: 840px;
+  color: #536172;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.detailGrid > div {
+  padding: 16px;
+  border: 1px solid rgba(203, 213, 225, 0.78);
+  border-radius: 8px;
+  background: #fbfcf9;
+}
+
+.detailGrid h3 {
+  color: #102136;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.detailGrid ul,
+.detailGrid ol,
+.billingPanel ul {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding-left: 20px;
+  color: #536172;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.cardAction {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.billingPanel,
+.workflowPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+  margin-top: 20px;
+  padding: 24px;
+}
+
+.choiceGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.choiceGrid div {
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px;
+  border: 1px solid rgba(13, 143, 90, 0.16);
+  border-radius: 8px;
+  background: #f6faf7;
+}
+
+.choiceGrid strong {
+  color: #086242;
+  font-size: 14px;
+}
+
+.choiceGrid span {
+  color: #536172;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .actions a:hover,
+  .cardAction:hover {
+    border-color: rgba(13, 143, 90, 0.46);
+    background: #0d8f5a;
+    color: #ffffff;
+  }
+}
+
+@media (max-width: 820px) {
+  .header,
+  .detailGrid,
+  .billingPanel,
+  .workflowPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 620px) {
+  .page {
+    padding: 16px;
+  }
+
+  .brand {
+    width: 256px;
+  }
+
+  .hero {
+    padding-top: 42px;
+  }
+
+  .productCard,
+  .billingPanel,
+  .workflowPanel {
+    padding: 18px;
+  }
+}

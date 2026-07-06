@@ -52,36 +52,6 @@ function slugify(value: string) {
     .slice(0, 52);
 }
 
-async function startBillingFlow(path: string, body?: Record<string, unknown>) {
-  const supabase = createBrowserSupabaseClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session?.access_token) {
-    throw new Error("Please log in again before managing billing.");
-  }
-
-  const response = await fetch(path, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const payload = await readApiResponse<{ error?: string; url?: string }>(
-    response,
-    "Billing could not be started.",
-  );
-
-  if (!response.ok || !payload.url) {
-    throw new Error(payload.error ?? "Billing could not be started.");
-  }
-
-  window.location.href = payload.url;
-}
-
 async function createMapTourDraft(body: {
   description: string;
   title: string;
@@ -166,7 +136,6 @@ export function DashboardPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState(searchParams.get("error") ?? "");
   const [creating, setCreating] = useState(false);
-  const [billingPending, setBillingPending] = useState(false);
   const [deletingAppId, setDeletingAppId] = useState<string | null>(null);
   const hasSupabase = Boolean(getSupabaseBrowserConfig());
 
@@ -261,11 +230,14 @@ export function DashboardPage() {
     if (checkout === "success") {
       const sessionId = searchParams.get("session_id");
       const credit = searchParams.get("credit");
-      const next = new URLSearchParams(searchParams);
-      next.delete("checkout");
-      next.delete("credit");
-      next.delete("session_id");
-      setSearchParams(next, { replace: true });
+      const clearCheckoutParams = () => {
+        const next = new URLSearchParams(searchParams);
+        next.delete("checkout");
+        next.delete("credit");
+        next.delete("session_id");
+        setSearchParams(next, { replace: true });
+      };
+
       setMessage(
         credit === "tour"
           ? "Checkout completed. Updating your Map Tour credits..."
@@ -275,12 +247,14 @@ export function DashboardPage() {
       void (async () => {
         if (credit !== "tour") {
           await loadDashboard();
+          clearCheckoutParams();
           setMessage("Checkout completed.");
           return;
         }
 
         if (!sessionId) {
           await loadDashboard();
+          clearCheckoutParams();
           setError("Checkout completed, but Stripe did not return a session ID.");
           return;
         }
@@ -318,6 +292,7 @@ export function DashboardPage() {
           // upsert has committed; keep the server-returned credit list so it
           // cannot be replaced by a racing client-side read.
           await loadDashboard({ syncedPurchases: payload.purchases });
+          clearCheckoutParams();
           setMessage("Checkout completed. Your Map Tour credits were updated.");
         } catch (syncError) {
           await loadDashboard();
@@ -428,24 +403,6 @@ export function DashboardPage() {
     navigate("/");
   }
 
-  async function handleMapTourCheckout(creditType: "tour") {
-    setBillingPending(true);
-    setError("");
-
-    try {
-      await startBillingFlow("/api/billing/map-tour-checkout", {
-        creditType,
-      });
-    } catch (checkoutError) {
-      setError(
-        checkoutError instanceof Error
-          ? checkoutError.message
-          : "Map Tour checkout could not be started.",
-      );
-      setBillingPending(false);
-    }
-  }
-
   async function handleDeleteApp(app: MapApp) {
     if (!user) {
       navigate("/login?next=/dashboard");
@@ -523,6 +480,12 @@ export function DashboardPage() {
           />
         </Link>
         <div className={styles.headerActions}>
+          <Link className={styles.adminLink} to="/pricing">
+            Pricing
+          </Link>
+          <Link className={styles.adminLink} to="/help">
+            Help
+          </Link>
           {isAdmin ? (
             <Link className={styles.adminLink} to="/admin">
               Admin
@@ -549,6 +512,7 @@ export function DashboardPage() {
             <span>Credits</span>
             <strong>{unusedTourCredits}</strong>
             <p>Buy one-time Map Tour credits after your free tours are used.</p>
+            <Link to="/pricing">Buy Map Tour credit</Link>
             <small>
               Map Tour credits: {unusedTourCredits} available. Free Map Tours: {Math.max(0, FREE_MAP_TOUR_LIMIT - mapTourApps.length)} remaining.
             </small>
@@ -601,14 +565,9 @@ export function DashboardPage() {
           !isAdmin &&
           mapTourApps.length >= FREE_MAP_TOUR_LIMIT &&
           unusedTourCredits < 1 ? (
-            <button
-              type="button"
-              disabled={billingPending}
-              className={styles.secondaryButton}
-              onClick={() => handleMapTourCheckout("tour")}
-            >
-              {billingPending ? "Opening..." : "Buy Map Tour credit"}
-            </button>
+            <Link className={styles.secondaryButton} to="/pricing">
+              Buy Map Tour credit
+            </Link>
           ) : null}
         </form>
 

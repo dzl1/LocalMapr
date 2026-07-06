@@ -3,11 +3,13 @@ import { Footer } from "./app/components/Footer";
 import { AdminPage } from "./pages/AdminPage";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { HelpPage } from "./pages/HelpPage";
 import { HomePage } from "./pages/HomePage";
 import { LocalGuideEditorPage } from "./pages/LocalGuideEditorPage";
 import { LocalGuidesPage } from "./pages/LocalGuidesPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MapTourPage } from "./pages/MapTourPage";
+import { PricingPage } from "./pages/PricingPage";
 
 export default function App() {
   const location = useLocation();
@@ -26,6 +28,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/help" element={<HelpPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route path="/local-guides" element={<LocalGuidesPage />} />
         <Route path="/local-guides/:id" element={<LocalGuideEditorPage />} />
         <Route path="/guide/:slug" element={<LocalGuideEditorPage />} />

@@ -377,7 +377,6 @@ export function MapTourPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [isRailCollapsed, setIsRailCollapsed] = useState(false);
   const [isTourDetailsCollapsed, setIsTourDetailsCollapsed] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [deletingTourId, setDeletingTourId] = useState<string | null>(null);
   const [viewport, setViewport] = useState<{ center: [number, number]; zoom: number }>({
     center: defaultCenter,
@@ -952,53 +951,6 @@ export function MapTourPage() {
     }
   }
 
-  async function startTourCreditCheckout() {
-    if (!user) {
-      navigate("/login?next=/map-tour", { replace: true });
-      return;
-    }
-
-    setIsCheckingOut(true);
-    setError("");
-
-    try {
-      const supabase = createBrowserSupabaseClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error("Please log in again before opening checkout.");
-      }
-
-      const response = await fetch("/api/billing/map-tour-checkout", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ creditType: "tour" }),
-      });
-      const payload = await readApiResponse<{ error?: string; url?: string }>(
-        response,
-        "Could not open tour credit checkout.",
-      );
-
-      if (!response.ok || !payload.url) {
-        throw new Error(payload.error || "Could not open tour credit checkout.");
-      }
-
-      window.location.href = payload.url;
-    } catch (checkoutError) {
-      setError(
-        checkoutError instanceof Error
-          ? checkoutError.message
-          : "Could not open tour credit checkout.",
-      );
-      setIsCheckingOut(false);
-    }
-  }
-
   async function createTourFromList() {
     if (!user) {
       navigate("/login?next=/map-tour", { replace: true });
@@ -1153,6 +1105,12 @@ export function MapTourPage() {
             />
           </Link>
           <div className={styles.homeNavActions}>
+            <Link className={styles.ghostButton} to="/pricing">
+              Pricing
+            </Link>
+            <Link className={styles.ghostButton} to="/help">
+              Help
+            </Link>
             <Link className={styles.ghostButton} to="/dashboard">
               Dashboard
             </Link>
@@ -1183,11 +1141,9 @@ export function MapTourPage() {
             <button type="button" onClick={() => void createTourFromList()} disabled={!canCreateTour}>
               Create Map Tour
             </button>
-            {!canCreateTour ? (
-              <button type="button" className={styles.secondaryButton} onClick={() => void startTourCreditCheckout()} disabled={isCheckingOut}>
-                {isCheckingOut ? "Opening..." : "Buy tour credit"}
-              </button>
-            ) : null}
+            <Link className={styles.secondaryButton} to="/pricing">
+              Buy tour credit
+            </Link>
           </div>
         </section>
 

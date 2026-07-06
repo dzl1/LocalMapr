@@ -219,6 +219,12 @@ export function LocalGuidesPage() {
         </Link>
         <div className={styles.headerActions}>
           {user?.email ? <span className={styles.accountEmail}>{user.email}</span> : null}
+          <Link className={styles.ghostButton} to="/pricing">
+            Pricing
+          </Link>
+          <Link className={styles.ghostButton} to="/help">
+            Help
+          </Link>
           <Link className={styles.ghostButton} to={user ? "/dashboard" : "/login?next=/local-guides"}>
             {user ? "Dashboard" : "Sign in"}
           </Link>

@@ -80,6 +80,8 @@ export function HomePage() {
             <a href="#templates">Templates</a>
             <a href="#workflow">Workflow</a>
             <a href="#sharing">Sharing</a>
+            <Link to="/pricing">Pricing</Link>
+            <Link to="/help">Help</Link>
           </nav>
           <div className={styles.accountNav}>
             {user?.email ? (
