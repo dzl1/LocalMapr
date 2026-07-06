@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent, MouseEvent } from "react";
+import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import L from "leaflet";
 import {
@@ -757,6 +757,8 @@ export function LocalGuideEditorPage() {
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const [isGuideCardCollapsed, setIsGuideCardCollapsed] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [draggingListStopId, setDraggingListStopId] = useState<string | null>(null);
+  const [dragOverStopId, setDragOverStopId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
   const [viewport, setViewport] = useState<{ center: [number, number]; zoom: number }>({
@@ -938,6 +940,60 @@ export function LocalGuideEditorPage() {
   function updateStop(id: string, patch: Partial<GuideStop>) {
     setStops((prev) => prev.map((stop) => (stop.id === id ? { ...stop, ...patch } : stop)));
     setDirty(true);
+  }
+
+  function reorderStop(draggedStopId: string, targetStopId: string) {
+    if (draggedStopId === targetStopId) {
+      return;
+    }
+
+    setStops((prev) => {
+      const fromIndex = prev.findIndex((stop) => stop.id === draggedStopId);
+      const toIndex = prev.findIndex((stop) => stop.id === targetStopId);
+
+      if (fromIndex < 0 || toIndex < 0) {
+        return prev;
+      }
+
+      const next = [...prev];
+      const [movedStop] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, movedStop);
+      return next;
+    });
+    setSelectedStopId(draggedStopId);
+    setDirty(true);
+  }
+
+  function finishListDrag() {
+    setDraggingListStopId(null);
+    setDragOverStopId(null);
+  }
+
+  function handleStopDragStart(event: DragEvent<HTMLButtonElement>, stopId: string) {
+    setDraggingListStopId(stopId);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", stopId);
+  }
+
+  function handleStopDragOver(event: DragEvent<HTMLButtonElement>, stopId: string) {
+    if (!draggingListStopId || draggingListStopId === stopId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDragOverStopId(stopId);
+  }
+
+  function handleStopDrop(event: DragEvent<HTMLButtonElement>, targetStopId: string) {
+    event.preventDefault();
+    const draggedStopId = event.dataTransfer.getData("text/plain") || draggingListStopId;
+
+    if (draggedStopId) {
+      reorderStop(draggedStopId, targetStopId);
+    }
+
+    finishListDrag();
   }
 
   function removeSelectedStop() {
@@ -1332,8 +1388,24 @@ export function LocalGuideEditorPage() {
               <button
                 type="button"
                 key={stop.id}
-                className={stop.id === selectedStopId ? cx(styles.stopItem, styles.active) : styles.stopItem}
+                className={cx(
+                  styles.stopItem,
+                  stop.id === selectedStopId && styles.active,
+                  stop.id === draggingListStopId && styles.dragging,
+                  stop.id === dragOverStopId && styles.dragOver,
+                )}
+                draggable={!isPublic}
                 onClick={() => setSelectedStopId(stop.id)}
+                onDragStart={(event) => handleStopDragStart(event, stop.id)}
+                onDragOver={(event) => handleStopDragOver(event, stop.id)}
+                onDragEnter={(event) => handleStopDragOver(event, stop.id)}
+                onDragLeave={() => {
+                  if (dragOverStopId === stop.id) {
+                    setDragOverStopId(null);
+                  }
+                }}
+                onDrop={(event) => handleStopDrop(event, stop.id)}
+                onDragEnd={finishListDrag}
               >
                 <span style={{ background: stop.color }}>{index + 1}</span>
                 <div>

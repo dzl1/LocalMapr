@@ -461,13 +461,27 @@
   padding: 11px;
   color: #102136;
   text-align: left;
-  cursor: pointer;
+  cursor: grab;
   box-shadow: 0 6px 16px rgba(15, 36, 25, 0.08);
+}
+
+.stopItem:active {
+  cursor: grabbing;
 }
 
 .stopItem.active {
   border-color: rgba(13, 143, 90, 0.42);
   box-shadow: 0 0 0 3px rgba(13, 143, 90, 0.14), 0 10px 22px rgba(15, 36, 25, 0.12);
+}
+
+.stopItem.dragging {
+  opacity: 0.55;
+}
+
+.stopItem.dragOver {
+  border-color: rgba(37, 99, 235, 0.58);
+  background: #f8fbff;
+  box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.16), 0 10px 22px rgba(15, 36, 25, 0.12);
 }
 
 .stopItem > span {
