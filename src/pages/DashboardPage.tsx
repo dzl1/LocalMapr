@@ -32,7 +32,7 @@ type DashboardLoadOptions = {
 const appTypeLabels: Record<string, string> = {
   field_app: "Field app",
   local_guide: "Local guide",
-  map_tour: "Map tour",
+  map_tour: "Map Story",
 };
 
 function TrashIcon() {
@@ -64,7 +64,7 @@ async function createMapTourDraft(body: {
   } = await supabase.auth.getSession();
 
   if (!session?.access_token) {
-    throw new Error("Please log in again before creating a Map Tour.");
+    throw new Error("Please log in again before creating a Map Story.");
   }
 
   const response = await fetch("/api/map-tour/create", {
@@ -78,11 +78,11 @@ async function createMapTourDraft(body: {
   const payload = await readApiResponse<{
     app?: MapApp;
     error?: string;
-  }>(response, "Map Tour could not be created.");
+  }>(response, "Map Story could not be created.");
 
   if (!response.ok || !payload.app) {
     if (import.meta.env.DEV && response.status === 404) {
-      const slugBase = slugify(body.title || "map-tour") || "map-tour";
+      const slugBase = slugify(body.title || "map-story") || "map-story";
       const { data: inserted, error } = await supabase
         .from("map_apps")
         .insert({
@@ -98,7 +98,7 @@ async function createMapTourDraft(body: {
                 imageUrls: [],
                 lat: defaultCenter[0],
                 lng: defaultCenter[1],
-                title: "Tour point 1",
+                title: "Story point 1",
               },
             ],
             center: defaultCenter,
@@ -107,19 +107,19 @@ async function createMapTourDraft(body: {
           description: body.description || null,
           owner_id: body.userId,
           slug: `${slugBase}-${crypto.randomUUID().slice(0, 8)}`,
-          title: body.title || "Untitled map tour",
+          title: body.title || "Untitled map story",
         })
         .select("*")
         .single();
 
       if (error || !inserted) {
-        throw new Error(error?.message ?? "Map Tour could not be created.");
+        throw new Error(error?.message ?? "Map Story could not be created.");
       }
 
       return inserted;
     }
 
-    throw new Error(payload.error ?? "Map Tour could not be created.");
+    throw new Error(payload.error ?? "Map Story could not be created.");
   }
 
   return payload.app;
@@ -198,7 +198,7 @@ export function DashboardPage() {
     if (purchasesError && !isMissingMapTourPurchasesTable(purchasesError)) {
       setError(
         purchasesError.message ||
-          "Map Tour credits could not be loaded. Please refresh the dashboard.",
+          "Map Story credits could not be loaded. Please refresh the dashboard.",
       );
     } else {
       setPurchases(
@@ -241,7 +241,7 @@ export function DashboardPage() {
 
       setMessage(
         credit === "tour"
-          ? "Checkout completed. Updating your Map Tour credits..."
+          ? "Checkout completed. Updating your Map Story credits..."
           : "Checkout completed.",
       );
 
@@ -282,10 +282,10 @@ export function DashboardPage() {
           const payload = await readApiResponse<{
             error?: string;
             purchases?: MapTourPurchase[];
-          }>(response, "Map Tour credit could not be synced.");
+          }>(response, "Map Story credit could not be synced.");
 
           if (!response.ok || !payload.purchases) {
-            throw new Error(payload.error || "Map Tour credit could not be synced.");
+            throw new Error(payload.error || "Map Story credit could not be synced.");
           }
 
           setPurchases(payload.purchases);
@@ -294,13 +294,13 @@ export function DashboardPage() {
           // cannot be replaced by a racing client-side read.
           await loadDashboard({ syncedPurchases: payload.purchases });
           clearCheckoutParams();
-          setMessage("Checkout completed. Your Map Tour credits were updated.");
+          setMessage("Checkout completed. Your Map Story credits were updated.");
         } catch (syncError) {
           await loadDashboard();
           setError(
             syncError instanceof Error
               ? syncError.message
-              : "Map Tour credit could not be synced.",
+              : "Map Story credit could not be synced.",
           );
         }
       })();
@@ -347,7 +347,7 @@ export function DashboardPage() {
       unusedTourCredits < 1
     ) {
       setError(
-        "Your free Map Tours are already used. Buy a tour credit to create another.",
+        "Your free Map Stories are already used. Buy a story credit to create another.",
       );
       setCreating(false);
       return;
@@ -365,7 +365,7 @@ export function DashboardPage() {
         setError(
           createError instanceof Error
             ? createError.message
-            : "Map Tour could not be created.",
+            : "Map Story could not be created.",
         );
         setCreating(false);
       }
@@ -484,10 +484,10 @@ export function DashboardPage() {
           <div className={styles.planPanel}>
             <span>Credits</span>
             <strong>{unusedTourCredits}</strong>
-            <p>Buy one-time Map Tour credits after your free tours are used.</p>
-            <Link to="/pricing">Buy Map Tour credit</Link>
+            <p>Buy one-time Map Story credits after your free stories are used.</p>
+            <Link to="/pricing">Buy Map Story credit</Link>
             <small>
-              Map Tour credits: {unusedTourCredits} available. Free Map Tours: {Math.max(0, FREE_MAP_TOUR_LIMIT - mapTourApps.length)} remaining.
+              Map Story credits: {unusedTourCredits} available. Free Map Stories: {Math.max(0, FREE_MAP_TOUR_LIMIT - mapTourApps.length)} remaining.
             </small>
           </div>
         ) : null}
@@ -518,7 +518,7 @@ export function DashboardPage() {
               name="app_type"
               onChange={(event) => setCreateType(event.target.value)}
             >
-              <option value="map_tour">Map tour</option>
+              <option value="map_tour">Map Story</option>
               <option value="local_guide">Local guide</option>
               <option value="field_app">Field app</option>
             </select>
@@ -539,7 +539,7 @@ export function DashboardPage() {
           mapTourApps.length >= FREE_MAP_TOUR_LIMIT &&
           unusedTourCredits < 1 ? (
             <Link className={styles.secondaryButton} to="/pricing">
-              Buy Map Tour credit
+              Buy Map Story credit
             </Link>
           ) : null}
         </form>
@@ -562,9 +562,9 @@ export function DashboardPage() {
                     <p>{app.description || "No description yet."}</p>
                     {app.app_type === "map_tour" ? (
                       <div className={styles.appLinks}>
-                        <Link to={`/map-tour/${app.id}`}>Open editor</Link>
+                        <Link to={`/map-stories/${app.id}`}>Open editor</Link>
                         {app.status === "published" ? (
-                          <Link to={`/tour/${app.slug}`} target="_blank" rel="noreferrer">
+                          <Link to={`/story/${app.slug}`} target="_blank" rel="noreferrer">
                             Open public
                           </Link>
                         ) : null}

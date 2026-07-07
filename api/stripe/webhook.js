@@ -230,7 +230,7 @@ async function syncCheckoutSession(session) {
     );
 
     if (purchaseError) {
-      throw new Error(purchaseError.message || "Map Tour credit could not be recorded.");
+      throw new Error(purchaseError.message || "Map Story credit could not be recorded.");
     }
   }
 }

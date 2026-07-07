@@ -39,7 +39,7 @@ STRIPE_WEBHOOK_SECRET=
 
 Billing uses a one-time Stripe Checkout Price:
 
-- `STRIPE_MAP_TOUR_CREDIT_PRICE_ID`: one-time payment Price for one extra Map Tour after the 2 free tours.
+- `STRIPE_MAP_TOUR_CREDIT_PRICE_ID`: one-time payment Price for one extra Map Story after the 2 free stories.
 
 For local development, put these in `.env.local`. Run the database schema in
 `supabase/schema.sql` before using the dashboard.

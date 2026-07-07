@@ -8,11 +8,11 @@ import styles from "@/app/page.module.css";
 
 const appTypes = [
   {
-    title: "Map tours",
+    title: "Map Stories",
     copy: "Turn landmarks, field notes, and photos into guided routes people can open from any link.",
-    image: "/map-tours-card.png",
-    imageAlt: "Map Tours preview showing route stops connected on a map",
-    href: "/map-tour",
+    image: "/map-stories-card.svg",
+    imageAlt: "Map Stories preview showing route stops connected on a map",
+    href: "/map-stories",
   },
   {
     title: "Local guides",
@@ -70,7 +70,7 @@ export function HomePage() {
             <h1 id="hero-title">Create</h1>
             <p className={styles.heroCopy}>
               LocalMapr (short for Local Mapper) helps you build small,
-              shareable web apps for mapping stories, map tours, local guides,
+              shareable web apps for Map Stories, Local Guides,
               and place-based projects without starting from a blank canvas.
             </p>
             <div className={styles.heroActions}>
@@ -87,7 +87,7 @@ export function HomePage() {
             <img
               className={styles.heroImage}
               src="/localmapr-hero.png"
-              alt="LocalMapr interface showing a map tour builder with numbered stops and publish controls"
+              alt="LocalMapr interface showing a map story builder with numbered stops and publish controls"
             />
           </div>
         </div>

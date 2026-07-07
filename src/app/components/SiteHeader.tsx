@@ -13,7 +13,7 @@ type SiteHeaderProps = {
 };
 
 const navItems = [
-  { href: "/map-tour", label: "Map Tours" },
+  { href: "/map-stories", label: "Map Stories" },
   { href: "/local-guides", label: "Local Guides" },
   { href: "/pricing", label: "Pricing" },
   { href: "/help", label: "Help" },

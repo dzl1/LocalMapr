@@ -77,7 +77,7 @@ export default async function handler(
   const appId = String(payload.appId || "").trim();
 
   if (!appId || !payload.config) {
-    sendJson(response, 400, { error: "Map Tour app ID and config are required." });
+    sendJson(response, 400, { error: "Map Story app ID and config are required." });
     return;
   }
 
@@ -90,7 +90,7 @@ export default async function handler(
     .maybeSingle();
 
   if (!app) {
-    sendJson(response, 404, { error: "Map Tour was not found." });
+    sendJson(response, 404, { error: "Map Story was not found." });
     return;
   }
 
@@ -110,7 +110,7 @@ export default async function handler(
 
   if (!admin && pointCount > pointLimit) {
     sendJson(response, 402, {
-      error: `Map Tours can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points.`,
+      error: `Map Stories can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points.`,
     });
     return;
   }
@@ -127,7 +127,7 @@ export default async function handler(
   } = {
     config: payload.config,
     description: String(payload.description || "").trim() || null,
-    title: String(payload.title || "").trim() || "Untitled map tour",
+    title: String(payload.title || "").trim() || "Untitled map story",
   };
 
   if (shouldUpdatePublishState) {
@@ -144,7 +144,7 @@ export default async function handler(
 
   if (updateError || !updated) {
     sendJson(response, 400, {
-      error: updateError?.message || "Could not save Map Tour.",
+      error: updateError?.message || "Could not save Map Story.",
     });
     return;
   }

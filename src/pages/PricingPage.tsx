@@ -51,11 +51,11 @@ export function PricingPage() {
       });
       const payload = await readApiResponse<{ error?: string; url?: string }>(
         response,
-        "Could not open Map Tour credit checkout.",
+        "Could not open Map Story credit checkout.",
       );
 
       if (!response.ok || !payload.url) {
-        throw new Error(payload.error || "Could not open Map Tour credit checkout.");
+        throw new Error(payload.error || "Could not open Map Story credit checkout.");
       }
 
       window.location.href = payload.url;
@@ -63,7 +63,7 @@ export function PricingPage() {
       setError(
         checkoutError instanceof Error
           ? checkoutError.message
-          : "Could not open Map Tour credit checkout.",
+          : "Could not open Map Story credit checkout.",
       );
       setIsCheckingOut(false);
     }
@@ -79,24 +79,24 @@ export function PricingPage() {
 
       <section className={styles.hero}>
         <p>Pricing</p>
-        <h1>Buy Map Tour credits</h1>
+        <h1>Buy Map Story credits</h1>
         <span>
-          Map Tour credits are one-time purchases. Each credit lets you create
-          one extra Map Tour after your free tours are used.
+          Map Story credits are one-time purchases. Each credit lets you create
+          one extra Map Story after your free stories are used.
         </span>
       </section>
 
       <section className={styles.pricingGrid}>
         <article className={styles.priceCard}>
           <div>
-            <p>Map Tour credit</p>
+            <p>Map Story credit</p>
             <h2>{MAP_TOUR_CREDIT_PRICE_LABEL}</h2>
-            <span>One extra Map Tour</span>
+            <span>One extra Map Story</span>
           </div>
           <ul>
-            <li>{FREE_MAP_TOUR_LIMIT} Map Tours included before paid credits are needed.</li>
-            <li>One credit is consumed when an extra Map Tour is created.</li>
-            <li>Each Map Tour can include up to {FREE_MAP_TOUR_POINT_LIMIT} points.</li>
+            <li>{FREE_MAP_TOUR_LIMIT} Map Stories included before paid credits are needed.</li>
+            <li>One credit is consumed when an extra Map Story is created.</li>
+            <li>Each Map Story can include up to {FREE_MAP_TOUR_POINT_LIMIT} points.</li>
             <li>Credits are tied to your signed-in LocalMapr account.</li>
           </ul>
           {error ? <p className={styles.error}>{error}</p> : null}
@@ -114,8 +114,8 @@ export function PricingPage() {
           <ol>
             <li>Stripe opens a secure checkout for the one-time credit.</li>
             <li>After payment, you return to LocalMapr automatically.</li>
-            <li>Your Map Tour credit total increases by one.</li>
-            <li>The next extra Map Tour you create uses that credit.</li>
+            <li>Your Map Story credit total increases by one.</li>
+            <li>The next extra Map Story you create uses that credit.</li>
           </ol>
         </aside>
       </section>

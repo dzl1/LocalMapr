@@ -1,4 +1,4 @@
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { Footer } from "./app/components/Footer";
 import { AdminPage } from "./pages/AdminPage";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
@@ -11,15 +11,25 @@ import { LoginPage } from "./pages/LoginPage";
 import { MapTourPage } from "./pages/MapTourPage";
 import { PricingPage } from "./pages/PricingPage";
 
+function LegacyMapStoryRedirect({ publicStory = false }: { publicStory?: boolean }) {
+  const params = useParams();
+  const value = publicStory ? params.slug : params.id;
+  const target = publicStory ? `/story/${value ?? ""}` : `/map-stories/${value ?? ""}`;
+
+  return <Navigate to={target} replace />;
+}
+
 export default function App() {
   const location = useLocation();
-  const isMapToursHome =
-    location.pathname === "/map-tour" || location.pathname === "/map-tour/";
+  const isMapStoriesHome =
+    location.pathname === "/map-stories" || location.pathname === "/map-stories/";
   const hideFooter =
+    location.pathname.startsWith("/story/") ||
     location.pathname.startsWith("/tour/") ||
     location.pathname.startsWith("/guide/") ||
     location.pathname.startsWith("/local-guides/") ||
-    (!isMapToursHome && location.pathname.startsWith("/map-tour/"));
+    (!isMapStoriesHome && location.pathname.startsWith("/map-stories/")) ||
+    location.pathname.startsWith("/map-tour/");
 
   return (
     <>
@@ -33,9 +43,12 @@ export default function App() {
         <Route path="/local-guides" element={<LocalGuidesPage />} />
         <Route path="/local-guides/:id" element={<LocalGuideEditorPage />} />
         <Route path="/guide/:slug" element={<LocalGuideEditorPage />} />
-        <Route path="/map-tour" element={<MapTourPage />} />
-        <Route path="/map-tour/:id" element={<MapTourPage />} />
-        <Route path="/tour/:slug" element={<MapTourPage />} />
+        <Route path="/map-stories" element={<MapTourPage />} />
+        <Route path="/map-stories/:id" element={<MapTourPage />} />
+        <Route path="/story/:slug" element={<MapTourPage />} />
+        <Route path="/map-tour" element={<Navigate to="/map-stories" replace />} />
+        <Route path="/map-tour/:id" element={<LegacyMapStoryRedirect />} />
+        <Route path="/tour/:slug" element={<LegacyMapStoryRedirect publicStory />} />
         <Route path="/admin" element={<AdminPage />} />
       </Routes>
       {hideFooter ? null : <Footer />}

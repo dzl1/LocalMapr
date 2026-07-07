@@ -178,6 +178,145 @@
   line-height: 1.45;
 }
 
+.guidePanel {
+  display: grid;
+  gap: 22px;
+  padding: 28px;
+  border: 1px solid #dfe7e6;
+  border-radius: 8px;
+  background: #f4faf6;
+  box-shadow: 0 18px 42px rgba(16, 33, 54, 0.07);
+}
+
+.guideIntro p {
+  color: #086242;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.guideIntro h2 {
+  margin-top: 7px;
+  font-size: clamp(24px, 3vw, 36px);
+  line-height: 1.08;
+}
+
+.guideIntro span {
+  display: block;
+  max-width: 760px;
+  margin-top: 12px;
+  color: #536172;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.stepColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.stepCard {
+  padding: 20px;
+  border: 1px solid rgba(203, 213, 225, 0.78);
+  border-radius: 8px;
+  background: #fbfcf9;
+}
+
+.stepCard h3 {
+  color: #102136;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.stepCard ol {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-left: 20px;
+  color: #536172;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.fieldSection h3,
+.actionSection h3 {
+  color: #102136;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.fieldNote {
+  display: block;
+  max-width: 760px;
+  margin-top: 8px;
+  color: #536172;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.fieldList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.fieldRow {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid rgba(203, 213, 225, 0.78);
+  border-radius: 8px;
+  background: #fbfcf9;
+}
+
+.fieldHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fieldHead strong {
+  color: #102136;
+  font-size: 15px;
+}
+
+.fieldTag {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(13, 143, 90, 0.12);
+  color: #086242;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.fieldWhat {
+  color: #3f4c5c;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.fieldTip {
+  color: #6b7683;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.actionSection ul {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-left: 20px;
+  color: #536172;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .cardAction:hover {
     border-color: rgba(13, 143, 90, 0.46);
@@ -190,6 +329,11 @@
   .detailGrid,
   .billingPanel,
   .workflowPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .stepColumns,
+  .fieldList {
     grid-template-columns: 1fr;
   }
 }
@@ -210,6 +354,10 @@
   .productCard,
   .billingPanel,
   .workflowPanel {
+    padding: 18px;
+  }
+
+  .guidePanel {
     padding: 18px;
   }
 }

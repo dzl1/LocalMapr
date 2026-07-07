@@ -49,7 +49,7 @@ function createDefaultCard(index: number) {
     imageUrls: [],
     lat: defaultCenter[0],
     lng: defaultCenter[1],
-    title: `Tour point ${index + 1}`,
+    title: `Story point ${index + 1}`,
   };
 }
 
@@ -111,7 +111,7 @@ async function handleCreateMapTour(
     return;
   }
 
-  const title = String(payload.title || "").trim() || "Untitled map tour";
+  const title = String(payload.title || "").trim() || "Untitled map story";
   const description = String(payload.description || "").trim() || null;
   const config = payload.config ?? defaultConfig();
   const pointCount = getMapTourPointCount(config);
@@ -128,7 +128,7 @@ async function handleCreateMapTour(
 
   if (!admin && pointCount > FREE_MAP_TOUR_POINT_LIMIT) {
     sendJson(response, 402, {
-      error: `Map Tours can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points.`,
+      error: `Map Stories can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points.`,
     });
     return;
   }
@@ -151,14 +151,14 @@ async function handleCreateMapTour(
 
     if (tourCountError) {
       sendJson(response, 500, {
-        error: tourCountError.message || "Could not count Map Tours.",
+        error: tourCountError.message || "Could not count Map Stories.",
       });
       return;
     }
 
     if (purchasesError && !isMissingMapTourPurchasesTable(purchasesError)) {
       sendJson(response, 500, {
-        error: purchasesError.message || "Could not load Map Tour credits.",
+        error: purchasesError.message || "Could not load Map Story credits.",
       });
       return;
     }
@@ -172,13 +172,13 @@ async function handleCreateMapTour(
       getUnusedTourCreditCount(safePurchases) < 1
     ) {
       sendJson(response, 402, {
-        error: `Your ${FREE_MAP_TOUR_LIMIT} free Map Tours are used. Buy a ${MAP_TOUR_CREDIT_PRICE_LABEL} tour credit to create another.`,
+        error: `Your ${FREE_MAP_TOUR_LIMIT} free Map Stories are used. Buy a ${MAP_TOUR_CREDIT_PRICE_LABEL} story credit to create another.`,
       });
       return;
     }
   }
 
-  const slugBase = slugify(payload.slug || title || "map-tour") || "map-tour";
+  const slugBase = slugify(payload.slug || title || "map-story") || "map-story";
   const { data: inserted, error: insertError } = await supabase
     .from("map_apps")
     .insert({
@@ -194,7 +194,7 @@ async function handleCreateMapTour(
 
   if (insertError || !inserted) {
     sendJson(response, 400, {
-      error: insertError?.message || "Could not create Map Tour.",
+      error: insertError?.message || "Could not create Map Story.",
     });
     return;
   }
@@ -210,7 +210,7 @@ export default async function handler(
     await handleCreateMapTour(request, response);
   } catch (error) {
     sendJson(response, 500, {
-      error: errorMessage(error, "Could not create Map Tour."),
+      error: errorMessage(error, "Could not create Map Story."),
     });
   }
 }

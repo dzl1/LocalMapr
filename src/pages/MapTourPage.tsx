@@ -18,6 +18,7 @@ import {
   EMAIL_VERIFICATION_REQUIRED_MESSAGE,
   isUserEmailVerified,
 } from "@/lib/auth";
+import { useAuth } from "@/lib/authContext";
 import {
   FREE_MAP_TOUR_LIMIT,
   FREE_MAP_TOUR_POINT_LIMIT,
@@ -61,7 +62,7 @@ const colors = ["#1f4834", "#2563eb", "#be123c", "#b45309", "#6d28d9"];
 function createCard(index: number, lat = defaultCenter[0], lng = defaultCenter[1]): TourCard {
   return {
     id: `tour-card-${Date.now()}-${index}`,
-    title: `Tour point ${index + 1}`,
+    title: `Story point ${index + 1}`,
     body: "",
     hoverText: "",
     lat,
@@ -107,7 +108,7 @@ function parseConfig(config: Json): TourConfig {
     const card = typeof raw === "object" && raw ? (raw as Record<string, unknown>) : {};
     return {
       id: String(card.id || `tour-card-${index}`),
-      title: String(card.title || `Tour point ${index + 1}`),
+      title: String(card.title || `Story point ${index + 1}`),
       body: String(card.body || ""),
       hoverText: String(card.hoverText || ""),
       lat: toNumber(card.lat, defaultCenter[0]),
@@ -281,8 +282,8 @@ function AddPointOnClick({
 
 function getShareUrls(slug: string) {
   const origin = window.location.origin;
-  const publicUrl = `${origin}/tour/${encodeURIComponent(slug)}`;
-  const embedUrl = `${origin}/tour/${encodeURIComponent(slug)}?embed=1`;
+  const publicUrl = `${origin}/story/${encodeURIComponent(slug)}`;
+  const embedUrl = `${origin}/story/${encodeURIComponent(slug)}?embed=1`;
   const embedCode = `<iframe src="${embedUrl}" width="100%" height="720" style="border:0;" loading="lazy"></iframe>`;
   return { embedCode, embedUrl, publicUrl };
 }
@@ -362,6 +363,11 @@ export function MapTourPage() {
   const isListMode = !isPublic && !isEditorMode;
   const hasSupabase = Boolean(getSupabaseBrowserConfig());
 
+  const { user: authUser, loading: authLoading } = useAuth();
+  const authUserId = authUser?.id ?? null;
+  const authUserRef = useRef<User | null>(authUser);
+  authUserRef.current = authUser;
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -408,14 +414,16 @@ export function MapTourPage() {
 
   useEffect(() => {
     if (isListMode) {
-      document.title = "Map Tours | LocalMapr";
+      document.title = "Map Stories | LocalMapr";
       return;
     }
 
-    document.title = isPublic ? "Map Tour | LocalMapr" : "Map Tour Editor | LocalMapr";
+    document.title = isPublic ? "Map Story | LocalMapr" : "Map Story Editor | LocalMapr";
   }, [isListMode, isPublic]);
 
   useEffect(() => {
+    let active = true;
+
     async function load() {
       if (!hasSupabase) {
         setError("Supabase is not configured for this workspace.");
@@ -423,11 +431,12 @@ export function MapTourPage() {
         return;
       }
 
-      setLoading(true);
       setError("");
-      initializedRef.current = false;
 
       if (isPublic) {
+        setLoading(true);
+        initializedRef.current = false;
+
         const supabase = createBrowserSupabaseClient();
         const { data, error: tourError } = await supabase
           .from("map_apps")
@@ -437,8 +446,12 @@ export function MapTourPage() {
           .eq("status", "published")
           .maybeSingle();
 
+        if (!active) {
+          return;
+        }
+
         if (tourError || !data) {
-          setError("This published map tour could not be found.");
+          setError("This published map story could not be found.");
           setLoading(false);
           return;
         }
@@ -457,17 +470,22 @@ export function MapTourPage() {
         return;
       }
 
-      const supabase = createBrowserSupabaseClient();
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
+      // Auth-required modes: rely on the shared auth context so we don't make a
+      // fresh network auth request (which caused the persistent loading state)
+      // on every navigation to this page.
+      if (authLoading) {
+        return;
+      }
+
+      const currentUser = authUserRef.current;
 
       if (!currentUser) {
-        navigate("/login?next=/map-tour", { replace: true });
+        navigate("/login?next=/map-stories", { replace: true });
         return;
       }
 
       if (!isUserEmailVerified(currentUser)) {
+        const supabase = createBrowserSupabaseClient();
         await supabase.auth.signOut();
         navigate(
           `/login?error=${encodeURIComponent(EMAIL_VERIFICATION_REQUIRED_MESSAGE)}`,
@@ -476,8 +494,11 @@ export function MapTourPage() {
         return;
       }
 
+      setLoading(true);
+      initializedRef.current = false;
       setUser(currentUser);
 
+      const supabase = createBrowserSupabaseClient();
       const [
         { data: appRows },
         { data: purchasesData, error: purchasesError },
@@ -503,6 +524,10 @@ export function MapTourPage() {
             .maybeSingle(),
         ]);
 
+      if (!active) {
+        return;
+      }
+
       const tours = appRows ?? [];
       const selectedApp = appId ? tours.find((item) => item.id === appId) ?? null : null;
       const safePurchases = isMissingMapTourPurchasesTable(purchasesError)
@@ -519,7 +544,7 @@ export function MapTourPage() {
       }
 
       if (!selectedApp) {
-        setError("Map tour draft was not found in your workspace.");
+        setError("Map story draft was not found in your workspace.");
         setLoading(false);
         return;
       }
@@ -540,11 +565,15 @@ export function MapTourPage() {
     }
 
     void load();
-  }, [appId, hasSupabase, isListMode, isPublic, navigate, slug]);
+
+    return () => {
+      active = false;
+    };
+  }, [appId, authLoading, authUserId, hasSupabase, isListMode, isPublic, navigate, slug]);
 
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
-      setMessage("Checkout completed. Your Map Tour credits were updated.");
+      setMessage("Checkout completed. Your Map Story credits were updated.");
       const next = new URLSearchParams(searchParams);
       next.delete("checkout");
       next.delete("credit");
@@ -635,7 +664,7 @@ export function MapTourPage() {
   function addCard(lat: number, lng: number) {
     if (!isAdmin && cards.length >= selectedPointLimit) {
       setError(
-        `Map Tours can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points.`,
+        `Map Stories can include up to ${FREE_MAP_TOUR_POINT_LIMIT} points.`,
       );
       return;
     }
@@ -672,7 +701,7 @@ export function MapTourPage() {
   }
 
   async function deleteTour() {
-    if (!app || !user || !window.confirm(`Delete "${title || "Map Tour"}"?`)) {
+    if (!app || !user || !window.confirm(`Delete "${title || "Map Story"}"?`)) {
       return;
     }
 
@@ -684,11 +713,11 @@ export function MapTourPage() {
       .eq("owner_id", user.id);
 
     if (deleteError) {
-      setError(deleteError.message || "Unable to delete Map Tour.");
+      setError(deleteError.message || "Unable to delete Map Story.");
       return;
     }
 
-    navigate("/map-tour");
+    navigate("/map-stories");
   }
 
   function moveSelectedCard(direction: -1 | 1) {
@@ -889,7 +918,7 @@ export function MapTourPage() {
 
     if (!session?.access_token) {
       setSaveState("error");
-      setError("Please log in again before saving this Map Tour.");
+      setError("Please log in again before saving this Map Story.");
       return false;
     }
 
@@ -897,7 +926,7 @@ export function MapTourPage() {
     const updatePayload: Database["public"]["Tables"]["map_apps"]["Update"] = {
       config: nextConfig,
       description: description.trim() || null,
-      title: title.trim() || "Untitled map tour",
+      title: title.trim() || "Untitled map story",
     };
 
     if (shouldUpdatePublishState) {
@@ -916,7 +945,7 @@ export function MapTourPage() {
 
     if (updateError || !updated) {
       setSaveState("error");
-      setError(updateError?.message || "Map tour changes could not be saved.");
+      setError(updateError?.message || "Map story changes could not be saved.");
       return false;
     }
 
@@ -927,7 +956,7 @@ export function MapTourPage() {
     setSaveState("saved");
     setDirty(false);
     if (!silent) {
-      setMessage("Map tour changes saved.");
+      setMessage("Map story changes saved.");
     }
     return true;
   }
@@ -954,7 +983,7 @@ export function MapTourPage() {
 
   async function createTourFromList() {
     if (!user) {
-      navigate("/login?next=/map-tour", { replace: true });
+      navigate("/login?next=/map-stories", { replace: true });
       return;
     }
 
@@ -963,7 +992,7 @@ export function MapTourPage() {
       isAdmin || allTours.length < FREE_MAP_TOUR_LIMIT || unusedTourCredits > 0;
 
     if (!canCreate) {
-      setError("Your free Map Tours are used. Buy a tour credit to create another.");
+      setError("Your free Map Stories are used. Buy a story credit to create another.");
       return;
     }
 
@@ -973,7 +1002,7 @@ export function MapTourPage() {
     } = await supabase.auth.getSession();
 
     if (!session?.access_token) {
-      setError("Please log in again before creating a Map Tour.");
+      setError("Please log in again before creating a Map Story.");
       return;
     }
 
@@ -989,13 +1018,13 @@ export function MapTourPage() {
           center: defaultCenter,
           zoom: defaultZoom,
         }),
-        title: `Map Tour ${allTours.length + 1}`,
+        title: `Map Story ${allTours.length + 1}`,
       }),
     });
     const payload = await readApiResponse<{
       app?: MapApp;
       error?: string;
-    }>(response, "Could not create Map Tour.");
+    }>(response, "Could not create Map Story.");
 
     if (!response.ok || !payload.app) {
       if (import.meta.env.DEV && response.status === 404) {
@@ -1009,36 +1038,36 @@ export function MapTourPage() {
               zoom: defaultZoom,
             }),
             owner_id: user.id,
-            slug: `map-tour-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
-            title: `Map Tour ${allTours.length + 1}`,
+            slug: `map-story-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
+            title: `Map Story ${allTours.length + 1}`,
           })
           .select("id")
           .single();
 
         if (insertError || !inserted) {
-          setError(insertError?.message || "Could not create Map Tour.");
+          setError(insertError?.message || "Could not create Map Story.");
           return;
         }
 
-        navigate(`/map-tour/${inserted.id}`);
+        navigate(`/map-stories/${inserted.id}`);
         return;
       }
 
-      setError(payload.error || "Could not create Map Tour.");
+      setError(payload.error || "Could not create Map Story.");
       return;
     }
 
-    navigate(`/map-tour/${payload.app.id}`);
+    navigate(`/map-stories/${payload.app.id}`);
   }
 
   async function deleteTourFromList(tour: MapApp) {
     if (!user) {
-      navigate("/login?next=/map-tour", { replace: true });
+      navigate("/login?next=/map-stories", { replace: true });
       return;
     }
 
     const confirmed = window.confirm(
-      `Delete "${tour.title || "Map Tour"}"? This will permanently remove the Map Tour and its share link.`,
+      `Delete "${tour.title || "Map Story"}"? This will permanently remove the Map Story and its share link.`,
     );
 
     if (!confirmed) {
@@ -1058,7 +1087,7 @@ export function MapTourPage() {
       .eq("app_type", "map_tour");
 
     if (deleteError) {
-      setError(deleteError.message || "Unable to delete Map Tour.");
+      setError(deleteError.message || "Unable to delete Map Story.");
       setDeletingTourId(null);
       return;
     }
@@ -1072,7 +1101,7 @@ export function MapTourPage() {
     return (
       <main className={styles.homePage}>
         <section className={styles.statusCard}>
-          <h1>Loading map tour...</h1>
+          <h1>Loading map story...</h1>
         </section>
       </main>
     );
@@ -1082,7 +1111,7 @@ export function MapTourPage() {
     return (
       <main className={styles.homePage}>
         <section className={styles.statusCard}>
-          <h1>Map tour unavailable</h1>
+          <h1>Map story unavailable</h1>
           <p>{error}</p>
           <Link to={isPublic ? "/" : "/dashboard"}>Go back</Link>
         </section>
@@ -1101,8 +1130,8 @@ export function MapTourPage() {
 
         <section className={styles.homeHero}>
           <div className={styles.homeHeroCopy}>
-            <p>Map Tours</p>
-            <h1>Your Map Tours</h1>
+            <p>Map Stories</p>
+            <h1>Your Map Stories</h1>
             <span>{user?.email}</span>
           </div>
 
@@ -1112,19 +1141,19 @@ export function MapTourPage() {
               {isAdmin
                 ? "Unlimited"
                 : allTours.length >= FREE_MAP_TOUR_LIMIT
-                  ? `${unusedTourCredits} tour credits`
-                  : `${Math.max(0, FREE_MAP_TOUR_LIMIT - allTours.length)} free tours`}
+                  ? `${unusedTourCredits} story credits`
+                  : `${Math.max(0, FREE_MAP_TOUR_LIMIT - allTours.length)} free stories`}
             </strong>
             <p>
               {isAdmin
-                ? "Super admins can create unlimited tours and points."
-                : `${Math.max(0, FREE_MAP_TOUR_LIMIT - allTours.length)} free tours remaining. ${unusedTourCredits} paid tour credits available.`}
+                ? "Super admins can create unlimited stories and points."
+                : `${Math.max(0, FREE_MAP_TOUR_LIMIT - allTours.length)} free stories remaining. ${unusedTourCredits} paid story credits available.`}
             </p>
             <button type="button" onClick={() => void createTourFromList()} disabled={!canCreateTour}>
-              Create Map Tour
+              Create Map Story
             </button>
             <Link className={styles.secondaryButton} to="/pricing">
-              Buy tour credit
+              Buy story credit
             </Link>
           </div>
         </section>
@@ -1136,13 +1165,13 @@ export function MapTourPage() {
           <div className={styles.panelHeader}>
             <div>
               <p>Library</p>
-              <h2>{allTours.length} tours</h2>
+              <h2>{allTours.length} stories</h2>
             </div>
           </div>
 
-          <section className={styles.table} aria-label="Your Map Tours">
+          <section className={styles.table} aria-label="Your Map Stories">
             {allTours.length === 0 ? (
-              <div className={styles.empty}>No Map Tours created yet.</div>
+              <div className={styles.empty}>No Map Stories created yet.</div>
             ) : (
               allTours.map((tour) => {
                 const config = parseConfig(tour.config);
@@ -1151,7 +1180,7 @@ export function MapTourPage() {
                     <button
                       type="button"
                       className={styles.rowOpenButton}
-                      onClick={() => navigate(`/map-tour/${tour.id}`)}
+                      onClick={() => navigate(`/map-stories/${tour.id}`)}
                     >
                       <span>
                         <strong>{tour.title}</strong>
@@ -1167,7 +1196,7 @@ export function MapTourPage() {
                       onClick={() => void deleteTourFromList(tour)}
                       disabled={deletingTourId === tour.id}
                       aria-label={`Delete ${tour.title}`}
-                      title="Delete tour"
+                      title="Delete story"
                     >
                       <TrashIcon />
                     </button>
@@ -1298,7 +1327,7 @@ export function MapTourPage() {
 
         {!isRailCollapsed ? (
           <div className={styles.railContent}>
-            <Link className={styles.railLogoLink} to="/map-tour" aria-label="Map Tours home">
+            <Link className={styles.railLogoLink} to="/map-stories" aria-label="Map Stories home">
               <img
                 className={styles.railLogo}
                 src="/brand/logo_dark.png"
@@ -1319,11 +1348,11 @@ export function MapTourPage() {
             <button
               type="button"
               className={styles.detailsToggle}
-              aria-label={isTourDetailsCollapsed ? "Open tour details" : "Close tour details"}
+              aria-label={isTourDetailsCollapsed ? "Open story details" : "Close story details"}
               aria-expanded={!isTourDetailsCollapsed}
               onClick={() => setIsTourDetailsCollapsed((current) => !current)}
             >
-              <span>Tour details</span>
+              <span>Story details</span>
               <span
                 className={cx(
                   styles.detailsToggleIcon,
@@ -1343,7 +1372,7 @@ export function MapTourPage() {
                       setTitle(event.target.value);
                       setDirty(true);
                     }}
-                    aria-label="Map tour title"
+                    aria-label="Map story title"
                   />
                 </div>
 
@@ -1421,7 +1450,7 @@ export function MapTourPage() {
               ref={tourCardListRef}
               onScroll={handleTourCardListScroll}
             >
-              {!cards.length ? <div className={styles.empty}>No tour points yet.</div> : null}
+              {!cards.length ? <div className={styles.empty}>No story points yet.</div> : null}
               {cards.map((card, index) => (
                 <button
                   type="button"
@@ -1478,7 +1507,7 @@ export function MapTourPage() {
                   {saveState === "saving" ? "Saving" : "Save"}
                 </button>
                 <button type="button" className={cx(styles.button, styles.buttonDanger)} onClick={() => void deleteTour()}>
-                  Delete tour
+                  Delete story
                 </button>
                 <span className={cx(styles.saveState, saveState === "error" && styles.saveStateError)}>
                   {saveState === "saving"

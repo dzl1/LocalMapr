@@ -37,7 +37,7 @@ async function handleMapTourCheckout(request, response) {
   const stripeConfig = getMapTourStripeConfig();
 
   if (!stripe || !stripeConfig) {
-    sendJson(response, 500, { error: "Map Tour Stripe billing is not configured." });
+    sendJson(response, 500, { error: "Map Story Stripe billing is not configured." });
     return;
   }
 
@@ -64,7 +64,7 @@ async function handleMapTourCheckout(request, response) {
     );
   } catch (error) {
     sendJson(response, 500, {
-      error: errorMessage(error, "Map Tour credit Price is not configured correctly."),
+      error: errorMessage(error, "Map Story credit Price is not configured correctly."),
     });
     return;
   }

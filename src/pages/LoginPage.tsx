@@ -100,7 +100,7 @@ export function LoginPage() {
           <p>Map app workspace</p>
           <h1>Log in and start building place-based apps.</h1>
           <p>
-            Create map tours, local guides, and field apps that are stored
+            Create map stories, local guides, and field apps that are stored
             securely against your account.
           </p>
         </div>

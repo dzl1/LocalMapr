@@ -51,7 +51,7 @@ export default async function handler(
   const slug = String(requestUrl.searchParams.get("slug") || "").trim();
 
   if (!slug) {
-    sendJson(response, 400, { error: "Map tour slug is required." });
+    sendJson(response, 400, { error: "Map story slug is required." });
     return;
   }
 
@@ -59,7 +59,7 @@ export default async function handler(
 
   if (!config) {
     sendJson(response, 500, {
-      error: "Supabase admin is not configured for public map tours.",
+      error: "Supabase admin is not configured for public map stories.",
     });
     return;
   }
@@ -84,7 +84,7 @@ export default async function handler(
       error:
         payload && typeof payload === "object" && "message" in payload
           ? String(payload.message)
-          : "Could not load public map tour.",
+          : "Could not load public map story.",
     });
     return;
   }
@@ -92,7 +92,7 @@ export default async function handler(
   const data = Array.isArray(payload) ? payload[0] : null;
 
   if (!data) {
-    sendJson(response, 404, { error: "This published map tour could not be found." });
+    sendJson(response, 404, { error: "This published map story could not be found." });
     return;
   }
 

@@ -26,5 +26,5 @@
   <circle cx="640" cy="250" r="22" fill="#F4C84A" stroke="white" stroke-width="8"/>
   <circle cx="820" cy="150" r="22" fill="#0D8F5A" stroke="white" stroke-width="8"/>
   <rect x="90" y="78" width="238" height="64" rx="14" fill="#102136" fill-opacity="0.88"/>
-  <text x="118" y="118" fill="#FFFFFF" font-size="34" font-family="Arial, Helvetica, sans-serif" font-weight="700">Map Tours</text>
+  <text x="118" y="118" fill="#FFFFFF" font-size="34" font-family="Arial, Helvetica, sans-serif" font-weight="700">Map Stories</text>
 </svg>

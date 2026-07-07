@@ -309,7 +309,7 @@ begin
 
   if not user_is_admin then
     if point_count > 4 then
-      raise exception 'Map Tours can include up to 4 points.';
+      raise exception 'Map Stories can include up to 4 points.';
     end if;
   end if;
 
@@ -360,7 +360,7 @@ begin
   for update skip locked;
 
   if tour_credit_id is null then
-    raise exception 'Your 2 free Map Tours are used. Buy a $1 tour credit to create another.';
+    raise exception 'Your 2 free Map Stories are used. Buy a $1 story credit to create another.';
   end if;
 
   update public.map_tour_purchases

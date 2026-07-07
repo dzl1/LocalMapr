@@ -134,7 +134,7 @@ async function handleCreditSync(request, response) {
 
   if (upsertError) {
     sendJson(response, 500, {
-      error: upsertError.message || "Map Tour credit could not be recorded.",
+      error: upsertError.message || "Map Story credit could not be recorded.",
     });
     return;
   }
@@ -147,7 +147,7 @@ async function handleCreditSync(request, response) {
 
   if (purchasesError) {
     sendJson(response, 500, {
-      error: purchasesError.message || "Map Tour credits could not be loaded.",
+      error: purchasesError.message || "Map Story credits could not be loaded.",
     });
     return;
   }
