@@ -1336,13 +1336,13 @@ export function MapTourPage() {
             </Link>
 
             {isPublic ? (
-              <>
+              <div className={styles.publicIntro}>
                 <div className={styles.railHeader}>
                   <h1 className={styles.publicTitle}>{title}</h1>
                 </div>
 
                 {description ? <p className={styles.publicDescription}>{description}</p> : null}
-              </>
+              </div>
             ) : (
               <section className={styles.detailsCard}>
             <button

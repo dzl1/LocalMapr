@@ -803,6 +803,17 @@
   pointer-events: auto;
 }
 
+.isPublic .publicIntro {
+  pointer-events: auto;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.58);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(6px);
+}
+
 .isPublic .publicTitle,
 .isPublic .publicDescription {
   color: #fff;
