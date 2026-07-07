@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
+import { SiteHeader } from "@/app/components/SiteHeader";
 import type { Database } from "@/lib/database.types";
 import {
   EMAIL_VERIFICATION_REQUIRED_MESSAGE,
@@ -160,21 +161,7 @@ export function AdminPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <Link className={styles.brand} to="/">
-          <img
-            className={styles.brandLogo}
-            src="/brand/logo_dark.png"
-            alt="LocalMapr"
-          />
-        </Link>
-        <nav className={styles.actions} aria-label="Admin navigation">
-          <Link to="/dashboard">Dashboard</Link>
-          <button type="button" onClick={handleSignOut}>
-            Sign out
-          </button>
-        </nav>
-      </header>
+      <SiteHeader user={user} isAdmin onSignOut={handleSignOut} />
 
       <section className={styles.hero}>
         <p>Super admin</p>

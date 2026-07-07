@@ -1,60 +1,20 @@
 .page {
   min-height: 100vh;
-  padding: 24px;
   color: #102136;
   background: #f6faf7;
   font-family: var(--font-sora), Arial, Helvetica, sans-serif;
 }
 
-.header,
+.guidesHeader,
 .hero,
 .infoGrid,
 .workspaceGrid,
 .notice,
 .error {
-  width: min(1180px, 100%);
+  width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  min-height: 58px;
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  width: 296px;
-}
-
-.brandLogo {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  min-width: 0;
-}
-
-.accountEmail {
-  max-width: 260px;
-  overflow: hidden;
-  color: #536172;
-  font-size: 13px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ghostButton,
 .heroPanel a,
 .signInPanel a,
 .createPanel button {
@@ -66,13 +26,6 @@
   font: inherit;
   font-size: 14px;
   font-weight: 800;
-}
-
-.ghostButton {
-  padding: 0 14px;
-  color: #344659;
-  border: 1px solid #d8e5df;
-  background: #ffffff;
 }
 
 .hero {
@@ -363,17 +316,12 @@
 }
 
 @media (max-width: 640px) {
-  .page {
-    padding: 18px;
-  }
-
-  .header,
-  .headerActions {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .brand {
-    width: min(296px, 100%);
+  .guidesHeader,
+  .hero,
+  .infoGrid,
+  .workspaceGrid,
+  .notice,
+  .error {
+    width: min(1180px, calc(100% - 32px));
   }
 }

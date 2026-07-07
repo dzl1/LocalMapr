@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import type { User } from "@supabase/supabase-js";
+import { useNavigate } from "react-router-dom";
+import { SiteHeader } from "@/app/components/SiteHeader";
 import { readApiResponse } from "@/lib/api";
-import {
-  createBrowserSupabaseClient,
-  getSupabaseBrowserConfig,
-} from "@/lib/supabase/client";
+import { useAuth } from "@/lib/authContext";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import {
   FREE_MAP_TOUR_LIMIT,
   FREE_MAP_TOUR_POINT_LIMIT,
@@ -15,26 +13,14 @@ import styles from "@/app/pricing/pricing.module.css";
 
 export function PricingPage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { configured: hasSupabase, loading, user } = useAuth();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [error, setError] = useState("");
-  const hasSupabase = Boolean(getSupabaseBrowserConfig());
+  const workspaceHref = user ? "/dashboard" : "/login?next=/pricing";
 
   useEffect(() => {
     document.title = "Pricing | LocalMapr";
-
-    if (!hasSupabase) {
-      setLoading(false);
-      return;
-    }
-
-    const supabase = createBrowserSupabaseClient();
-    void supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      setLoading(false);
-    });
-  }, [hasSupabase]);
+  }, []);
 
   async function startTourCreditCheckout() {
     if (!user) {
@@ -85,20 +71,11 @@ export function PricingPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <Link className={styles.brand} to="/" aria-label="LocalMapr home">
-          <img
-            className={styles.brandLogo}
-            src="/brand/logo_dark.png"
-            alt="LocalMapr"
-          />
-        </Link>
-        <nav className={styles.actions} aria-label="Pricing navigation">
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/map-tour">Map Tours</Link>
-          <Link to="/help">Help</Link>
-        </nav>
-      </header>
+      <SiteHeader
+        className={styles.pricingHeader}
+        user={user}
+        accountHref={workspaceHref}
+      />
 
       <section className={styles.hero}>
         <p>Pricing</p>

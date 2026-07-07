@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
+import { SiteHeader } from "@/app/components/SiteHeader";
 import type { Database } from "@/lib/database.types";
 import {
   EMAIL_VERIFICATION_REQUIRED_MESSAGE,
@@ -209,27 +210,11 @@ export function LocalGuidesPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <Link className={styles.brand} to="/" aria-label="LocalMapr home">
-          <img
-            className={styles.brandLogo}
-            src="/brand/logo_dark.png"
-            alt="LocalMapr"
-          />
-        </Link>
-        <div className={styles.headerActions}>
-          {user?.email ? <span className={styles.accountEmail}>{user.email}</span> : null}
-          <Link className={styles.ghostButton} to="/pricing">
-            Pricing
-          </Link>
-          <Link className={styles.ghostButton} to="/help">
-            Help
-          </Link>
-          <Link className={styles.ghostButton} to={user ? "/dashboard" : "/login?next=/local-guides"}>
-            {user ? "Dashboard" : "Sign in"}
-          </Link>
-        </div>
-      </header>
+      <SiteHeader
+        className={styles.guidesHeader}
+        user={user}
+        accountHref={user ? "/dashboard" : "/login?next=/local-guides"}
+      />
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>

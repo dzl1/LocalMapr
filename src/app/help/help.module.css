@@ -1,48 +1,19 @@
 .page {
   min-height: 100vh;
-  padding: 24px;
   color: #102136;
   background: #f6faf7;
   font-family: var(--font-sora), Arial, Helvetica, sans-serif;
 }
 
-.header,
+.helpHeader,
 .hero,
 .productGrid,
 .billingPanel,
 .workflowPanel {
-  width: min(1180px, 100%);
+  width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  min-height: 58px;
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  width: 296px;
-}
-
-.brandLogo {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.actions a,
 .cardAction {
   display: inline-flex;
   align-items: center;
@@ -208,7 +179,6 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .actions a:hover,
   .cardAction:hover {
     border-color: rgba(13, 143, 90, 0.46);
     background: #0d8f5a;
@@ -217,30 +187,20 @@
 }
 
 @media (max-width: 820px) {
-  .header,
   .detailGrid,
   .billingPanel,
   .workflowPanel {
     grid-template-columns: 1fr;
   }
-
-  .header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .actions {
-    justify-content: flex-start;
-  }
 }
 
 @media (max-width: 620px) {
-  .page {
-    padding: 16px;
-  }
-
-  .brand {
-    width: 256px;
+  .helpHeader,
+  .hero,
+  .productGrid,
+  .billingPanel,
+  .workflowPanel {
+    width: min(1180px, calc(100% - 32px));
   }
 
   .hero {

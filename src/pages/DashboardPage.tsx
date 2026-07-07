@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
+import { SiteHeader } from "@/app/components/SiteHeader";
 import { readApiResponse } from "@/lib/api";
 import type { Database, Json } from "@/lib/database.types";
 import {
@@ -471,35 +472,7 @@ export function DashboardPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <Link className={styles.brand} to="/">
-          <img
-            className={styles.brandLogo}
-            src="/brand/logo_dark.png"
-            alt="LocalMapr"
-          />
-        </Link>
-        <div className={styles.headerActions}>
-          <Link className={styles.adminLink} to="/pricing">
-            Pricing
-          </Link>
-          <Link className={styles.adminLink} to="/help">
-            Help
-          </Link>
-          {isAdmin ? (
-            <Link className={styles.adminLink} to="/admin">
-              Admin
-            </Link>
-          ) : null}
-          <button
-            className={styles.ghostButton}
-            type="button"
-            onClick={handleSignOut}
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
+      <SiteHeader user={user} isAdmin={isAdmin} onSignOut={handleSignOut} />
 
       <section className={styles.hero}>
         <div>

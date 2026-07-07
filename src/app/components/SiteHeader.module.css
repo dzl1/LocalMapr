@@ -1,0 +1,135 @@
+.siteHeader {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 32px;
+  width: min(1180px, 100%);
+  min-height: 84px;
+  margin: 0 auto;
+  color: #102136;
+  font-family: var(--font-sora), Arial, Helvetica, sans-serif;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  width: 296px;
+}
+
+.brandLogo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 4vw, 42px);
+  color: #344659;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.navLinks a,
+.navCta,
+.adminLink,
+.signOutButton {
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.navLinks a[aria-current="page"] {
+  color: #086242;
+  font-weight: 850;
+}
+
+.accountNav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.accountEmail {
+  max-width: 210px;
+  overflow: hidden;
+  color: #536172;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navCta,
+.adminLink,
+.signOutButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  border-radius: 8px;
+  padding: 0 18px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.navCta,
+.adminLink {
+  color: #086242;
+  border: 1px solid rgba(13, 143, 90, 0.28);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.signOutButton {
+  color: #344659;
+  border: 1px solid #d8e5df;
+  background: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .navLinks a:hover {
+    color: #086242;
+  }
+
+  .navCta:hover,
+  .adminLink:hover,
+  .signOutButton:hover {
+    background: #086242;
+    color: #ffffff;
+  }
+}
+
+@media (max-width: 980px) {
+  .siteHeader {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .navLinks,
+  .accountNav {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 620px) {
+  .siteHeader {
+    min-height: 0;
+  }
+
+  .brand {
+    width: 256px;
+  }
+
+  .navLinks,
+  .accountNav {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}

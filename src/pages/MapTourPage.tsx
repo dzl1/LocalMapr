@@ -11,6 +11,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import type { User } from "@supabase/supabase-js";
+import { SiteHeader } from "@/app/components/SiteHeader";
 import { readApiResponse } from "@/lib/api";
 import type { Database, Json } from "@/lib/database.types";
 import {
@@ -1096,29 +1097,10 @@ export function MapTourPage() {
 
     return (
       <main className={styles.homePage}>
-        <header className={styles.homeNav}>
-          <Link className={styles.brand} to="/" aria-label="LocalMapr home">
-            <img
-              className={styles.brandLogo}
-              src="/brand/logo_dark.png"
-              alt="LocalMapr"
-            />
-          </Link>
-          <div className={styles.homeNavActions}>
-            <Link className={styles.ghostButton} to="/pricing">
-              Pricing
-            </Link>
-            <Link className={styles.ghostButton} to="/help">
-              Help
-            </Link>
-            <Link className={styles.ghostButton} to="/dashboard">
-              Dashboard
-            </Link>
-          </div>
-        </header>
+        <SiteHeader className={styles.homeHeader} user={user} />
 
         <section className={styles.homeHero}>
-          <div>
+          <div className={styles.homeHeroCopy}>
             <p>Map Tours</p>
             <h1>Your Map Tours</h1>
             <span>{user?.email}</span>

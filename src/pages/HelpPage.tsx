@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { SiteHeader } from "@/app/components/SiteHeader";
 import {
   FREE_MAP_TOUR_LIMIT,
   FREE_MAP_TOUR_POINT_LIMIT,
@@ -77,21 +78,7 @@ export function HelpPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <Link className={styles.brand} to="/" aria-label="LocalMapr home">
-          <img
-            className={styles.brandLogo}
-            src="/brand/logo_dark.png"
-            alt="LocalMapr"
-          />
-        </Link>
-        <nav className={styles.actions} aria-label="Help navigation">
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/pricing">Pricing</Link>
-          <Link to="/map-tour">Map Tours</Link>
-          <Link to="/local-guides">Local Guides</Link>
-        </nav>
-      </header>
+      <SiteHeader className={styles.helpHeader} />
 
       <section className={styles.hero}>
         <p>Help</p>

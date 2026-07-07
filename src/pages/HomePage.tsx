@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import type { User } from "@supabase/supabase-js";
+import { SiteHeader } from "@/app/components/SiteHeader";
 import { isUserEmailVerified } from "@/lib/auth";
-import {
-  createBrowserSupabaseClient,
-  getSupabaseBrowserConfig,
-} from "@/lib/supabase/client";
+import { useAuth } from "@/lib/authContext";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import styles from "@/app/page.module.css";
 
 const appTypes = [
@@ -44,54 +42,27 @@ const metrics = [
 ];
 
 export function HomePage() {
-  const [user, setUser] = useState<User | null>(null);
+  const { configured, user } = useAuth();
 
   useEffect(() => {
-    if (!getSupabaseBrowserConfig()) {
+    if (!configured || !user || isUserEmailVerified(user)) {
       return;
     }
 
     const supabase = createBrowserSupabaseClient();
-    void supabase.auth.getUser().then(async ({ data }) => {
-      if (data.user && !isUserEmailVerified(data.user)) {
-        await supabase.auth.signOut();
-        setUser(null);
-        return;
-      }
-
-      setUser(data.user);
-    });
-  }, []);
+    void supabase.auth.signOut();
+  }, [configured, user]);
 
   const workspaceHref = user ? "/dashboard" : "/login";
 
   return (
     <main className={styles.page}>
       <section className={styles.hero} aria-labelledby="hero-title">
-        <header className={styles.nav}>
-          <Link className={styles.brand} to="/" aria-label="LocalMapr home">
-            <img
-              className={styles.brandLogo}
-              src="/brand/logo_dark.png"
-              alt="LocalMapr"
-            />
-          </Link>
-          <nav className={styles.navLinks} aria-label="Primary navigation">
-            <a href="#templates">Templates</a>
-            <a href="#workflow">Workflow</a>
-            <a href="#sharing">Sharing</a>
-            <Link to="/pricing">Pricing</Link>
-            <Link to="/help">Help</Link>
-          </nav>
-          <div className={styles.accountNav}>
-            {user?.email ? (
-              <span className={styles.accountEmail}>{user.email}</span>
-            ) : null}
-            <Link className={styles.navCta} to={workspaceHref}>
-              {user ? "Dashboard" : "Log in"}
-            </Link>
-          </div>
-        </header>
+        <SiteHeader
+          className={styles.homeHeader}
+          user={user}
+          accountHref={workspaceHref}
+        />
 
         <div className={styles.heroContent}>
           <div className={styles.heroText}>
