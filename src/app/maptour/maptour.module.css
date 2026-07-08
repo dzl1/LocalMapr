@@ -1,5 +1,6 @@
 .homePage {
   min-height: 100vh;
+  overflow-x: hidden;
   color: #102136;
   background: #f6faf7;
   font-family: var(--font-sora), Arial, Helvetica, sans-serif;
@@ -49,6 +50,7 @@
 
 .homeHeroCopy {
   max-width: 760px;
+  min-width: 0;
 }
 
 .homeHero p,
@@ -72,6 +74,7 @@
   margin-top: 14px;
   color: #536172;
   font-size: 15px;
+  overflow-wrap: anywhere;
 }
 
 .homePlanPanel,
@@ -98,6 +101,8 @@
   margin-top: 8px;
   color: #102136;
   font-size: 28px;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
 }
 
 .homePlanPanel p {
@@ -1378,11 +1383,6 @@
 }
 
 @media (max-width: 1180px) {
-  .rail {
-    right: 18px;
-    left: auto;
-  }
-
   .editor {
     top: auto;
     right: 18px;
@@ -1400,17 +1400,80 @@
     width: min(1180px, calc(100% - 32px));
   }
 
+  .homeHero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding: 28px 0 20px;
+  }
+
+  .homeHero h1 {
+    font-size: clamp(34px, 10vw, 48px);
+    line-height: 1.02;
+  }
+
+  .homePlanPanel,
+  .homePanel {
+    padding: 18px;
+  }
+
+  .homePlanPanel p {
+    font-size: 13px;
+  }
+
+  .panelHeader h2 {
+    font-size: 24px;
+  }
+
   .statusCard {
     width: min(680px, calc(100% - 32px));
   }
 
   .row {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 38px;
+    align-items: start;
+    gap: 10px;
+    padding: 14px;
   }
 
   .rowOpenButton {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .rowOpenButton span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .row span:not(:first-child) {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #dfe7e6;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 6px 8px;
+    text-align: center;
+  }
+
+  .row strong {
+    font-size: 18px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .row small {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .deleteTourButton {
+    width: 38px;
+    height: 38px;
+    justify-self: end;
   }
 
   .tourPage,
@@ -1621,5 +1684,47 @@
 
   .titleInput {
     font-size: 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .homeHeader,
+  .homeHero,
+  .homePanel,
+  .notice,
+  .error {
+    width: min(1180px, calc(100% - 24px));
+  }
+
+  .homeHero {
+    padding-top: 20px;
+  }
+
+  .homeHero h1 {
+    font-size: clamp(32px, 12vw, 42px);
+  }
+
+  .homePlanPanel,
+  .homePanel {
+    padding: 14px;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) 36px;
+    padding: 12px;
+  }
+
+  .rowOpenButton {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .row span:not(:first-child) {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .deleteTourButton {
+    width: 36px;
+    height: 36px;
   }
 }

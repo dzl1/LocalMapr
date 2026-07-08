@@ -69,6 +69,7 @@ type TourConfig = {
 const defaultCenter: [number, number] = [-35.205, 173.95];
 const defaultZoom = 11;
 const colors = ["#1f4834", "#2563eb", "#be123c", "#b45309", "#6d28d9"];
+const compactEditorLayoutQuery = "(max-width: 820px)";
 
 function createCard(index: number, lat = defaultCenter[0], lng = defaultCenter[1]): TourCard {
   return {
@@ -96,6 +97,14 @@ function createPointIcon(index: number, color: string, active: boolean) {
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
+}
+
+function isCompactEditorViewport() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.matchMedia(compactEditorLayoutQuery).matches;
 }
 
 function TrashIcon() {
@@ -398,6 +407,7 @@ export function MapTourPage() {
   const [isStoryIntroCollapsed, setIsStoryIntroCollapsed] = useState(false);
   const [isStoryPointsCollapsed, setIsStoryPointsCollapsed] = useState(!isPublic);
   const [isPointEditorCollapsed, setIsPointEditorCollapsed] = useState(true);
+  const [isCompactEditorLayout, setIsCompactEditorLayout] = useState(isCompactEditorViewport);
   const [deletingTourId, setDeletingTourId] = useState<string | null>(null);
   const [viewport, setViewport] = useState<{ center: [number, number]; zoom: number }>({
     center: defaultCenter,
@@ -642,6 +652,21 @@ export function MapTourPage() {
   }, [selectedCardId]);
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia(compactEditorLayoutQuery);
+
+    function handleChange() {
+      setIsCompactEditorLayout(mediaQuery.matches);
+    }
+
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
+
+  useEffect(() => {
     resizeStoryTextArea();
   }, [selectedCard?.body, selectedCardId, isPointEditorCollapsed]);
 
@@ -726,7 +751,9 @@ export function MapTourPage() {
     }
 
     setIsStoryPointsCollapsed(true);
-    setIsPointEditorCollapsed(true);
+    if (isCompactEditorLayout) {
+      setIsPointEditorCollapsed(true);
+    }
   }
 
   function toggleStoryDetailsPanel() {
@@ -747,7 +774,9 @@ export function MapTourPage() {
     }
 
     setIsTourDetailsCollapsed(true);
-    setIsPointEditorCollapsed(true);
+    if (isCompactEditorLayout) {
+      setIsPointEditorCollapsed(true);
+    }
   }
 
   function toggleStoryPointsPanel() {
@@ -769,8 +798,10 @@ export function MapTourPage() {
       return;
     }
 
-    setIsTourDetailsCollapsed(true);
-    setIsStoryPointsCollapsed(true);
+    if (isCompactEditorLayout) {
+      setIsTourDetailsCollapsed(true);
+      setIsStoryPointsCollapsed(true);
+    }
   }
 
   function togglePointEditorPanel() {
