@@ -2,6 +2,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import L from "leaflet";
 import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronUp,
+  ImagePlus,
+  MapPin,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
   MapContainer,
   Marker,
   Popup,
@@ -385,8 +396,8 @@ export function MapTourPage() {
   const [isRailCollapsed, setIsRailCollapsed] = useState(false);
   const [isTourDetailsCollapsed, setIsTourDetailsCollapsed] = useState(false);
   const [isStoryIntroCollapsed, setIsStoryIntroCollapsed] = useState(false);
-  const [isStoryPointsCollapsed, setIsStoryPointsCollapsed] = useState(false);
-  const [isPointEditorCollapsed, setIsPointEditorCollapsed] = useState(false);
+  const [isStoryPointsCollapsed, setIsStoryPointsCollapsed] = useState(!isPublic);
+  const [isPointEditorCollapsed, setIsPointEditorCollapsed] = useState(true);
   const [deletingTourId, setDeletingTourId] = useState<string | null>(null);
   const [viewport, setViewport] = useState<{ center: [number, number]; zoom: number }>({
     center: defaultCenter,
@@ -405,12 +416,17 @@ export function MapTourPage() {
   const wheelRemainderRef = useRef(0);
   const wheelStepLockRef = useRef(false);
   const wheelStepTimerRef = useRef<number | null>(null);
+  const descriptionTextAreaRef = useRef<HTMLTextAreaElement | null>(null);
+  const storyTextAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const selectedCard = useMemo(
     () => cards.find((card) => card.id === selectedCardId) || null,
     [cards, selectedCardId],
   );
   const selectedPointLimit = getMapTourPointLimit(isAdmin);
+  const areRailSectionsCollapsed = isPublic
+    ? isStoryIntroCollapsed && isStoryPointsCollapsed
+    : isTourDetailsCollapsed && isStoryPointsCollapsed;
   const { publicUrl, embedUrl, embedCode } = app?.slug
     ? getShareUrls(app.slug)
     : { embedCode: "", embedUrl: "", publicUrl: "" };
@@ -625,6 +641,14 @@ export function MapTourPage() {
     return () => window.clearTimeout(timer);
   }, [selectedCardId]);
 
+  useEffect(() => {
+    resizeStoryTextArea();
+  }, [selectedCard?.body, selectedCardId, isPointEditorCollapsed]);
+
+  useEffect(() => {
+    resizeDescriptionTextArea();
+  }, [description, isTourDetailsCollapsed]);
+
   useEffect(
     () => () => {
       if (wheelStepTimerRef.current) {
@@ -664,6 +688,90 @@ export function MapTourPage() {
     setDirty(true);
   }
 
+  function resizeStoryTextArea() {
+    const element = storyTextAreaRef.current;
+    if (!element) {
+      return;
+    }
+
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
+  }
+
+  function resizeDescriptionTextArea() {
+    const element = descriptionTextAreaRef.current;
+    if (!element) {
+      return;
+    }
+
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
+  }
+
+  function openStoryDetailsPanel() {
+    setIsTourDetailsCollapsed(false);
+
+    if (isPublic) {
+      return;
+    }
+
+    setIsStoryPointsCollapsed(true);
+    setIsPointEditorCollapsed(true);
+  }
+
+  function toggleStoryDetailsPanel() {
+    if (isTourDetailsCollapsed) {
+      openStoryDetailsPanel();
+      return;
+    }
+
+    setIsTourDetailsCollapsed(true);
+  }
+
+  function openStoryPointsPanel() {
+    setIsStoryPointsCollapsed(false);
+
+    if (isPublic) {
+      setIsStoryIntroCollapsed(true);
+      return;
+    }
+
+    setIsTourDetailsCollapsed(true);
+    setIsPointEditorCollapsed(true);
+  }
+
+  function toggleStoryPointsPanel() {
+    if (isStoryPointsCollapsed) {
+      openStoryPointsPanel();
+      return;
+    }
+
+    setIsStoryPointsCollapsed(true);
+  }
+
+  function openPointEditorPanel(cardId?: string) {
+    if (cardId) {
+      setSelectedCardId(cardId);
+    }
+    setIsPointEditorCollapsed(false);
+
+    if (isPublic) {
+      return;
+    }
+
+    setIsTourDetailsCollapsed(true);
+    setIsStoryPointsCollapsed(true);
+  }
+
+  function togglePointEditorPanel() {
+    if (isPointEditorCollapsed) {
+      openPointEditorPanel();
+      return;
+    }
+
+    setIsPointEditorCollapsed(true);
+  }
+
   function addCard(lat: number, lng: number) {
     if (!isAdmin && cards.length >= selectedPointLimit) {
       setError(
@@ -675,7 +783,7 @@ export function MapTourPage() {
     setError("");
     setCards((prev) => {
       const next = [...prev, createCard(prev.length, lat, lng)];
-      setSelectedCardId(next[next.length - 1].id);
+      openPointEditorPanel(next[next.length - 1].id);
       return next;
     });
     setDirty(true);
@@ -1221,6 +1329,7 @@ export function MapTourPage() {
           isPublic && styles.isPublic,
           isEmbedMode && styles.isEmbed,
           !isPublic && styles.isEditorMode,
+          isPointEditorCollapsed && styles.isPointEditorCollapsed,
         )}
       >
       <MapContainer
@@ -1272,12 +1381,12 @@ export function MapTourPage() {
               key={card.id}
               position={[card.lat, card.lng]}
               icon={createPointIcon(index + 1, card.color, card.id === selectedCardId)}
-              draggable={!isPublic}
-              eventHandlers={{
-                click: (event) => {
-                  setSelectedCardId(card.id);
-                  event.target.openPopup();
-                },
+	              draggable={!isPublic}
+	              eventHandlers={{
+	                click: (event) => {
+	                  openPointEditorPanel(card.id);
+	                  event.target.openPopup();
+	                },
                 dragstart: (event) => {
                   draggingCardIdRef.current = card.id;
                   event.target.closePopup();
@@ -1293,12 +1402,12 @@ export function MapTourPage() {
                   }
                 },
                 dragend: (event) => {
-                  const next = event.target.getLatLng();
-                  updateCardPosition(card.id, next.lat, next.lng);
-                  draggingCardIdRef.current = null;
-                  setSelectedCardId(card.id);
-                },
-              }}
+	                  const next = event.target.getLatLng();
+	                  updateCardPosition(card.id, next.lat, next.lng);
+	                  draggingCardIdRef.current = null;
+	                  openPointEditorPanel(card.id);
+	                },
+	              }}
             >
               <Popup className={styles.pinPopup} closeButton={false} maxWidth={400}>
                 {pinPopupText}
@@ -1308,7 +1417,13 @@ export function MapTourPage() {
         })}
       </MapContainer>
 
-      <aside className={cx(styles.rail, isRailCollapsed && styles.railCollapsed)}>
+      <aside
+        className={cx(
+          styles.rail,
+          isRailCollapsed && styles.railCollapsed,
+          areRailSectionsCollapsed && styles.railSectionsCollapsed,
+        )}
+      >
         <button
           type="button"
           className={styles.railCollapseButton}
@@ -1369,11 +1484,11 @@ export function MapTourPage() {
               <section className={styles.detailsCard}>
             <button
               type="button"
-              className={styles.detailsToggle}
-              aria-label={isTourDetailsCollapsed ? "Open story details" : "Close story details"}
-              aria-expanded={!isTourDetailsCollapsed}
-              onClick={() => setIsTourDetailsCollapsed((current) => !current)}
-            >
+	              className={styles.detailsToggle}
+	              aria-label={isTourDetailsCollapsed ? "Open story details" : "Close story details"}
+	              aria-expanded={!isTourDetailsCollapsed}
+	              onClick={toggleStoryDetailsPanel}
+	            >
               <span>Story details</span>
               <span
                 className={cx(
@@ -1399,11 +1514,13 @@ export function MapTourPage() {
                 </div>
 
                 <textarea
+                  ref={descriptionTextAreaRef}
                   className={styles.descriptionInput}
                   value={description}
                   onChange={(event) => {
                     setDescription(event.target.value);
                     setDirty(true);
+                    resizeDescriptionTextArea();
                   }}
                   rows={5}
                   placeholder="Description"
@@ -1467,14 +1584,14 @@ export function MapTourPage() {
             {message ? <p className={styles.alert}>{message}</p> : null}
             {error ? <p className={cx(styles.alert, styles.alertError)}>{error}</p> : null}
 
-            <section className={styles.pointsPanel}>
+            <section className={cx(styles.pointsPanel, isStoryPointsCollapsed && styles.pointsPanelCollapsed)}>
               <button
                 type="button"
-                className={styles.panelToggle}
-                aria-label={isStoryPointsCollapsed ? "Open story points" : "Collapse story points"}
-                aria-expanded={!isStoryPointsCollapsed}
-                onClick={() => setIsStoryPointsCollapsed((current) => !current)}
-              >
+	                className={styles.panelToggle}
+	                aria-label={isStoryPointsCollapsed ? "Open story points" : "Collapse story points"}
+	                aria-expanded={!isStoryPointsCollapsed}
+	                onClick={toggleStoryPointsPanel}
+	              >
                 <span>Story points ({cards.length})</span>
                 <span
                   className={cx(
@@ -1498,11 +1615,11 @@ export function MapTourPage() {
                       key={card.id}
                       className={cx(
                         styles.card,
-                        card.id === selectedCardId && styles.active,
-                        getRenderableImageUrls(card).length > 0 && styles.hasImage,
-                      )}
-                      onClick={() => setSelectedCardId(card.id)}
-                      ref={(element) => {
+	                        card.id === selectedCardId && styles.active,
+	                        getRenderableImageUrls(card).length > 0 && styles.hasImage,
+	                      )}
+	                      onClick={() => openPointEditorPanel(card.id)}
+	                      ref={(element) => {
                         if (element) {
                           tourCardRefs.current.set(card.id, element);
                         } else {
@@ -1536,21 +1653,34 @@ export function MapTourPage() {
                 </button>
                 <button
                   type="button"
-                  className={cx(styles.button, styles.buttonQuiet)}
+                  className={cx(styles.button, styles.buttonQuiet, styles.mobileIconAction)}
                   onClick={() => setIsAdding((current) => !current)}
+                  aria-label={isAdding ? "Click map to place point" : "Place point on map"}
+                  title={isAdding ? "Click map" : "Place on map"}
                 >
-                  {isAdding ? "Click map" : "Place on map"}
+                  <MapPin className={styles.mobileActionIcon} size={18} strokeWidth={2.4} aria-hidden="true" />
+                  <span className={styles.mobileActionText}>{isAdding ? "Click map" : "Place on map"}</span>
                 </button>
                 <button
                   type="button"
-                  className={styles.button}
+                  className={cx(styles.button, styles.mobileIconAction)}
                   onClick={() => void persistChanges(false)}
                   disabled={saveState === "saving" || !dirty}
+                  aria-label={saveState === "saving" ? "Saving story" : "Save story"}
+                  title={saveState === "saving" ? "Saving" : "Save"}
                 >
-                  {saveState === "saving" ? "Saving" : "Save"}
+                  <Save className={styles.mobileActionIcon} size={18} strokeWidth={2.4} aria-hidden="true" />
+                  <span className={styles.mobileActionText}>{saveState === "saving" ? "Saving" : "Save"}</span>
                 </button>
-                <button type="button" className={cx(styles.button, styles.buttonDanger)} onClick={() => void deleteTour()}>
-                  Delete story
+                <button
+                  type="button"
+                  className={cx(styles.button, styles.buttonDanger, styles.mobileIconAction)}
+                  onClick={() => void deleteTour()}
+                  aria-label="Delete story"
+                  title="Delete story"
+                >
+                  <Trash2 className={styles.mobileActionIcon} size={18} strokeWidth={2.4} aria-hidden="true" />
+                  <span className={styles.mobileActionText}>Delete story</span>
                 </button>
                 <span className={cx(styles.saveState, saveState === "error" && styles.saveStateError)}>
                   {saveState === "saving"
@@ -1577,19 +1707,17 @@ export function MapTourPage() {
             <div className={styles.editorHeaderActions}>
               <button
                 type="button"
-                className={cx(styles.iconButton, styles.editorIconButton)}
-                aria-label={isPointEditorCollapsed ? "Open point editor" : "Collapse point editor"}
-                aria-expanded={!isPointEditorCollapsed}
-                title={isPointEditorCollapsed ? "Open point editor" : "Collapse point editor"}
-                onClick={() => setIsPointEditorCollapsed((current) => !current)}
-              >
-                <span
-                  className={cx(
-                    styles.editorChevronIcon,
-                    !isPointEditorCollapsed && styles.editorChevronIconExpanded,
-                  )}
-                  aria-hidden="true"
-                />
+	                className={cx(styles.iconButton, styles.editorIconButton)}
+	                aria-label={isPointEditorCollapsed ? "Open point editor" : "Collapse point editor"}
+	                aria-expanded={!isPointEditorCollapsed}
+	                title={isPointEditorCollapsed ? "Open point editor" : "Collapse point editor"}
+	                onClick={togglePointEditorPanel}
+	              >
+                {isPointEditorCollapsed ? (
+                  <ChevronUp size={18} strokeWidth={2.4} aria-hidden="true" />
+                ) : (
+                  <ChevronDown size={18} strokeWidth={2.4} aria-hidden="true" />
+                )}
               </button>
               <button
                 type="button"
@@ -1598,133 +1726,169 @@ export function MapTourPage() {
                 title="Close point editor"
                 onClick={() => setSelectedCardId(null)}
               >
-                <span className={styles.editorCloseIcon} aria-hidden="true" />
+                <X size={18} strokeWidth={2.4} aria-hidden="true" />
               </button>
             </div>
           </div>
 
           {!isPointEditorCollapsed ? (
             <div className={styles.editorBody}>
-          <label>
-            <span>Title</span>
-            <input
-              value={selectedCard.title}
-              onChange={(event) => updateSelectedCard({ title: event.target.value })}
-            />
-          </label>
+              <label>
+                <span>Title</span>
+                <input
+                  value={selectedCard.title}
+                  onChange={(event) => updateSelectedCard({ title: event.target.value })}
+                />
+              </label>
 
-          <label>
-            <span>Story text</span>
-            <textarea
-              rows={5}
-              value={selectedCard.body}
-              onChange={(event) => updateSelectedCard({ body: event.target.value })}
-            />
-          </label>
+              <label>
+                <span>Story text</span>
+                <textarea
+                  ref={storyTextAreaRef}
+                  className={styles.autoGrowTextarea}
+                  rows={5}
+                  value={selectedCard.body}
+                  onChange={(event) => {
+                    updateSelectedCard({ body: event.target.value });
+                    resizeStoryTextArea();
+                  }}
+                />
+              </label>
 
-          <label>
-            <span>Pin popup text</span>
-            <textarea
-              rows={2}
-              value={selectedCard.hoverText}
-              onChange={(event) => updateSelectedCard({ hoverText: event.target.value })}
-            />
-          </label>
+              <label>
+                <span>Pin popup text</span>
+                <textarea
+                  rows={2}
+                  value={selectedCard.hoverText}
+                  onChange={(event) => updateSelectedCard({ hoverText: event.target.value })}
+                />
+              </label>
 
-          <div className={styles.imageEditor}>
-            <div className={styles.imageEditorHeader}>
-              <span>Image URLs</span>
-              <button type="button" className={styles.miniAddButton} onClick={addImageUrl} aria-label="Add image URL" title="Add image URL">
-                +
-              </button>
-            </div>
-            <div className={styles.imageUrlList}>
-              {(selectedCard.imageUrls.length ? selectedCard.imageUrls : [""]).map((imageUrl, index) => (
-                <div className={styles.imageUrlRow} key={`${selectedCard.id}-image-${index}`}>
-                  <input
-                    value={imageUrl}
-                    onChange={(event) => updateImageUrl(index, event.target.value)}
-                    placeholder="Image URL"
-                  />
+              <div className={styles.imageEditor}>
+                <div className={styles.imageEditorHeader}>
+                  <span>Image URLs</span>
                   <button
                     type="button"
-                    className={styles.iconButton}
-                    onClick={() => removeImageUrl(index)}
-                    aria-label="Remove image URL"
-                    title="Remove image URL"
+                    className={styles.miniAddButton}
+                    onClick={addImageUrl}
+                    aria-label="Add image URL"
+                    title="Add image URL"
                   >
-                    Remove
+                    <ImagePlus size={18} strokeWidth={2.4} aria-hidden="true" />
                   </button>
                 </div>
-              ))}
-            </div>
-            <label className={styles.imageTimer}>
-              <span>Timer seconds</span>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={selectedCard.imageTimerSeconds || 4}
-                onChange={(event) =>
-                  updateSelectedCard({
-                    imageTimerSeconds: Math.max(
-                      1,
-                      toNumber(event.target.value, selectedCard.imageTimerSeconds || 4),
-                    ),
-                  })
-                }
-              />
-            </label>
-          </div>
+                <div className={styles.imageUrlList}>
+                  {(selectedCard.imageUrls.length ? selectedCard.imageUrls : [""]).map((imageUrl, index) => (
+                    <div className={styles.imageUrlRow} key={`${selectedCard.id}-image-${index}`}>
+                      <input
+                        value={imageUrl}
+                        onChange={(event) => updateImageUrl(index, event.target.value)}
+                        placeholder="Image URL"
+                      />
+                      <button
+                        type="button"
+                        className={cx(styles.iconButton, styles.editorActionIconButton)}
+                        onClick={() => removeImageUrl(index)}
+                        aria-label="Remove image URL"
+                        title="Remove image URL"
+                      >
+                        <Trash2 size={18} strokeWidth={2.4} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <label className={styles.imageTimer}>
+                  <span>Timer seconds</span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={selectedCard.imageTimerSeconds || 4}
+                    onChange={(event) =>
+                      updateSelectedCard({
+                        imageTimerSeconds: Math.max(
+                          1,
+                          toNumber(event.target.value, selectedCard.imageTimerSeconds || 4),
+                        ),
+                      })
+                    }
+                  />
+                </label>
+              </div>
 
-          <div className={styles.editorGrid}>
-            <label>
-              <span>Latitude</span>
-              <input
-                type="number"
-                step="0.00001"
-                value={selectedCard.lat}
-                onChange={(event) => updateSelectedCard({ lat: toNumber(event.target.value, selectedCard.lat) })}
-              />
-            </label>
-            <label>
-              <span>Longitude</span>
-              <input
-                type="number"
-                step="0.00001"
-                value={selectedCard.lng}
-                onChange={(event) => updateSelectedCard({ lng: toNumber(event.target.value, selectedCard.lng) })}
-              />
-            </label>
-          </div>
+              <div className={styles.editorGrid}>
+                <label>
+                  <span>Latitude</span>
+                  <input
+                    type="number"
+                    step="0.00001"
+                    value={selectedCard.lat}
+                    onChange={(event) => updateSelectedCard({ lat: toNumber(event.target.value, selectedCard.lat) })}
+                  />
+                </label>
+                <label>
+                  <span>Longitude</span>
+                  <input
+                    type="number"
+                    step="0.00001"
+                    value={selectedCard.lng}
+                    onChange={(event) => updateSelectedCard({ lng: toNumber(event.target.value, selectedCard.lng) })}
+                  />
+                </label>
+              </div>
 
-          <div className={styles.swatches} aria-label="Card colour">
-            {colors.map((color) => (
-              <button
-                key={color}
-                type="button"
-                aria-label={color}
-                className={selectedCard.color === color ? styles.active : ""}
-                style={{ background: color }}
-                onClick={() => updateSelectedCard({ color })}
-              />
-            ))}
-          </div>
+              <div className={styles.swatches} aria-label="Card colour">
+                {colors.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    aria-label={color}
+                    className={selectedCard.color === color ? styles.active : ""}
+                    style={{ background: color }}
+                    onClick={() => updateSelectedCard({ color })}
+                  />
+                ))}
+              </div>
 
-          <div className={styles.editorActions}>
-            <button type="button" className={styles.button} onClick={() => void persistChanges(false)} disabled={saveState === "saving" || !dirty}>
-              {saveState === "saving" ? "Saving" : "Save"}
-            </button>
-            <button type="button" className={cx(styles.button, styles.buttonQuiet)} onClick={() => moveSelectedCard(-1)}>
-              Move up
-            </button>
-            <button type="button" className={cx(styles.button, styles.buttonQuiet)} onClick={() => moveSelectedCard(1)}>
-              Move down
-            </button>
-            <button type="button" className={cx(styles.button, styles.buttonDanger)} onClick={removeSelectedCard}>
-              Delete
-            </button>
-          </div>
+              <div className={styles.editorActions}>
+                <button
+                  type="button"
+                  className={cx(styles.button, styles.editorActionIconButton)}
+                  onClick={() => void persistChanges(false)}
+                  disabled={saveState === "saving" || !dirty}
+                  aria-label={saveState === "saving" ? "Saving point" : "Save point"}
+                  title={saveState === "saving" ? "Saving" : "Save"}
+                >
+                  <Save size={18} strokeWidth={2.4} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={cx(styles.button, styles.buttonQuiet, styles.editorActionIconButton)}
+                  onClick={() => moveSelectedCard(-1)}
+                  aria-label="Move point up"
+                  title="Move up"
+                >
+                  <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={cx(styles.button, styles.buttonQuiet, styles.editorActionIconButton)}
+                  onClick={() => moveSelectedCard(1)}
+                  aria-label="Move point down"
+                  title="Move down"
+                >
+                  <ArrowDown size={18} strokeWidth={2.4} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={cx(styles.button, styles.buttonDanger, styles.editorActionIconButton)}
+                  onClick={removeSelectedCard}
+                  aria-label="Delete point"
+                  title="Delete point"
+                >
+                  <Trash2 size={18} strokeWidth={2.4} aria-hidden="true" />
+                </button>
+              </div>
             </div>
           ) : null}
         </aside>

@@ -330,6 +330,18 @@
   flex-direction: column;
 }
 
+.isEditorMode .rail.railSectionsCollapsed {
+  bottom: auto;
+  height: auto;
+  max-height: none;
+}
+
+.isEditorMode .rail.railSectionsCollapsed .railContent {
+  min-height: auto;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
 .railCollapseButton {
   position: absolute;
   top: 10px;
@@ -384,9 +396,11 @@
 .editor {
   top: 18px;
   right: 18px;
+  display: flex;
   width: min(390px, calc(100vw - 36px));
   max-height: calc(100vh - 36px);
-  overflow: auto;
+  flex-direction: column;
+  overflow: hidden;
   padding: 16px;
 }
 
@@ -407,49 +421,13 @@
   padding: 0;
 }
 
-.editorChevronIcon {
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: translateY(-2px) rotate(45deg);
-  transition: transform 160ms ease;
-}
-
-.editorChevronIconExpanded {
-  transform: translateY(2px) rotate(225deg);
-}
-
-.editorCloseIcon {
-  position: relative;
-  display: block;
-  width: 14px;
-  height: 14px;
-}
-
-.editorCloseIcon::before,
-.editorCloseIcon::after {
-  position: absolute;
-  top: 6px;
-  left: 0;
-  width: 14px;
-  height: 2px;
-  border-radius: 999px;
-  background: currentColor;
-  content: "";
-}
-
-.editorCloseIcon::before {
-  transform: rotate(45deg);
-}
-
-.editorCloseIcon::after {
-  transform: rotate(-45deg);
-}
-
 .editorBody {
-  display: contents;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .railHeader,
@@ -458,6 +436,19 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.editor .editorHeader {
+  flex: 0 0 auto;
+  margin: 0 0 14px;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.72);
+  padding: 0 0 12px;
+}
+
+.editorCollapsed .editorHeader {
+  margin-bottom: 0;
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 
 .publicTitle {
@@ -594,7 +585,8 @@
   color: #475569;
   padding: 9px 10px;
   font-size: 13px;
-  resize: vertical;
+  overflow: hidden;
+  resize: none;
 }
 
 .limitRow {
@@ -742,6 +734,10 @@
   border: 1px solid rgba(203, 213, 225, 0.72);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.44);
+}
+
+.pointsPanelCollapsed {
+  flex: 0 0 auto;
 }
 
 .linkButton {
@@ -1062,6 +1058,10 @@
   font-weight: 800;
 }
 
+.editorBody > label:first-child {
+  margin-top: 0;
+}
+
 .imageEditor {
   display: flex;
   flex-direction: column;
@@ -1113,6 +1113,12 @@
   padding: 8px 10px;
 }
 
+.imageUrlRow .editorActionIconButton {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
 .imageTimer {
   margin-top: 0 !important;
 }
@@ -1132,6 +1138,11 @@
 
 .editor textarea {
   resize: vertical;
+}
+
+.editor .autoGrowTextarea {
+  overflow: hidden;
+  resize: none;
 }
 
 .editorGrid {
@@ -1197,6 +1208,39 @@
 .buttonDanger {
   background: linear-gradient(135deg, rgba(185, 28, 28, 0.95), rgba(239, 68, 68, 0.82));
   color: #fff;
+}
+
+.editorActionIconButton {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+}
+
+.editorActionIconButton svg,
+.miniAddButton svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.editorIconButton {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+}
+
+.editorIconButton svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.mobileActionIcon {
+  display: none;
+  width: 18px;
+  height: 18px;
 }
 
 .pointIcon {
@@ -1334,6 +1378,21 @@
     padding: 8px;
   }
 
+  .isEditorMode .rail {
+    height: auto;
+    max-height: calc(100dvh - min(44dvh, 420px) - 24px);
+    overflow: hidden;
+  }
+
+  .isEditorMode.isPointEditorCollapsed .rail {
+    height: auto;
+    max-height: calc(100dvh - 92px);
+  }
+
+  .isEditorMode .railContent {
+    overflow: auto;
+  }
+
   .railCollapsed {
     right: auto;
     width: 40px;
@@ -1382,10 +1441,14 @@
     font-size: 18px;
   }
 
-  .publicDescription,
-  .descriptionInput {
+  .publicDescription {
     max-height: 132px;
     overflow: auto;
+  }
+
+  .descriptionInput {
+    max-height: none;
+    overflow: hidden;
   }
 
   .pointsPanel {
@@ -1407,6 +1470,15 @@
     overflow: auto;
   }
 
+  .isEditorMode .card {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .isEditorMode .card.hasImage {
+    overflow: hidden;
+  }
+
   .imageStack {
     height: 150px;
   }
@@ -1420,6 +1492,37 @@
   .isPublic .cardText span {
     max-height: 210px;
     font-size: 14px;
+  }
+
+  .isEditorMode .cardText span {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .railFooter {
+    gap: 6px;
+  }
+
+  .mobileIconAction {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    padding: 0;
+  }
+
+  .mobileActionText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .mobileActionIcon {
+    display: block;
+    flex: 0 0 auto;
+    color: currentColor;
   }
 
   .editor {
@@ -1440,6 +1543,12 @@
     align-items: center;
   }
 
+  .editor .editorHeader {
+    margin: 0 0 10px;
+    border-radius: 6px 6px 0 0;
+    padding: 0 0 10px;
+  }
+
   .editorHeaderActions {
     gap: 6px;
   }
@@ -1449,8 +1558,14 @@
     padding: 7px 9px;
   }
 
+  .editorHeaderActions .editorIconButton {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+
   .editorBody {
-    display: block;
+    display: flex;
   }
 
   .titleInput {
