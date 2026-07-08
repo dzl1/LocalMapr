@@ -384,6 +384,9 @@ export function MapTourPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [isRailCollapsed, setIsRailCollapsed] = useState(false);
   const [isTourDetailsCollapsed, setIsTourDetailsCollapsed] = useState(false);
+  const [isStoryIntroCollapsed, setIsStoryIntroCollapsed] = useState(false);
+  const [isStoryPointsCollapsed, setIsStoryPointsCollapsed] = useState(false);
+  const [isPointEditorCollapsed, setIsPointEditorCollapsed] = useState(false);
   const [deletingTourId, setDeletingTourId] = useState<string | null>(null);
   const [viewport, setViewport] = useState<{ center: [number, number]; zoom: number }>({
     center: defaultCenter,
@@ -1306,24 +1309,22 @@ export function MapTourPage() {
       </MapContainer>
 
       <aside className={cx(styles.rail, isRailCollapsed && styles.railCollapsed)}>
-        {!isPublic ? (
-          <button
-            type="button"
-            className={styles.railCollapseButton}
-            aria-label={isRailCollapsed ? "Open side panel" : "Collapse side panel"}
-            aria-expanded={!isRailCollapsed}
-            onClick={() => setIsRailCollapsed((current) => !current)}
-            title={isRailCollapsed ? "Open side panel" : "Collapse side panel"}
-          >
-            <span
-              className={cx(
-                styles.railCollapseIcon,
-                isRailCollapsed && styles.railCollapseIconCollapsed,
-              )}
-              aria-hidden="true"
-            />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className={styles.railCollapseButton}
+          aria-label={isRailCollapsed ? "Open side panel" : "Collapse side panel"}
+          aria-expanded={!isRailCollapsed}
+          onClick={() => setIsRailCollapsed((current) => !current)}
+          title={isRailCollapsed ? "Open side panel" : "Collapse side panel"}
+        >
+          <span
+            className={cx(
+              styles.railCollapseIcon,
+              isRailCollapsed && styles.railCollapseIconCollapsed,
+            )}
+            aria-hidden="true"
+          />
+        </button>
 
         {!isRailCollapsed ? (
           <div className={styles.railContent}>
@@ -1336,13 +1337,34 @@ export function MapTourPage() {
             </Link>
 
             {isPublic ? (
-              <div className={styles.publicIntro}>
-                <div className={styles.railHeader}>
-                  <h1 className={styles.publicTitle}>{title}</h1>
-                </div>
+              <section className={styles.publicIntro}>
+                <button
+                  type="button"
+                  className={styles.panelToggle}
+                  aria-label={isStoryIntroCollapsed ? "Open story description" : "Collapse story description"}
+                  aria-expanded={!isStoryIntroCollapsed}
+                  onClick={() => setIsStoryIntroCollapsed((current) => !current)}
+                >
+                  <span>Story description</span>
+                  <span
+                    className={cx(
+                      styles.detailsToggleIcon,
+                      !isStoryIntroCollapsed && styles.detailsToggleIconOpen,
+                    )}
+                    aria-hidden="true"
+                  />
+                </button>
 
-                {description ? <p className={styles.publicDescription}>{description}</p> : null}
-              </div>
+                {!isStoryIntroCollapsed ? (
+                  <div className={styles.publicIntroBody}>
+                    <div className={styles.railHeader}>
+                      <h1 className={styles.publicTitle}>{title}</h1>
+                    </div>
+
+                    {description ? <p className={styles.publicDescription}>{description}</p> : null}
+                  </div>
+                ) : null}
+              </section>
             ) : (
               <section className={styles.detailsCard}>
             <button
@@ -1445,39 +1467,60 @@ export function MapTourPage() {
             {message ? <p className={styles.alert}>{message}</p> : null}
             {error ? <p className={cx(styles.alert, styles.alertError)}>{error}</p> : null}
 
-            <div
-              className={styles.cardList}
-              ref={tourCardListRef}
-              onScroll={handleTourCardListScroll}
-            >
-              {!cards.length ? <div className={styles.empty}>No story points yet.</div> : null}
-              {cards.map((card, index) => (
-                <button
-                  type="button"
-                  key={card.id}
+            <section className={styles.pointsPanel}>
+              <button
+                type="button"
+                className={styles.panelToggle}
+                aria-label={isStoryPointsCollapsed ? "Open story points" : "Collapse story points"}
+                aria-expanded={!isStoryPointsCollapsed}
+                onClick={() => setIsStoryPointsCollapsed((current) => !current)}
+              >
+                <span>Story points ({cards.length})</span>
+                <span
                   className={cx(
-                    styles.card,
-                    card.id === selectedCardId && styles.active,
-                    getRenderableImageUrls(card).length > 0 && styles.hasImage,
+                    styles.detailsToggleIcon,
+                    !isStoryPointsCollapsed && styles.detailsToggleIconOpen,
                   )}
-                  onClick={() => setSelectedCardId(card.id)}
-                  ref={(element) => {
-                    if (element) {
-                      tourCardRefs.current.set(card.id, element);
-                    } else {
-                      tourCardRefs.current.delete(card.id);
-                    }
-                  }}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {!isStoryPointsCollapsed ? (
+                <div
+                  className={styles.cardList}
+                  ref={tourCardListRef}
+                  onScroll={handleTourCardListScroll}
                 >
-                  <TourCardImage card={card} />
-                  <span className={styles.badge} style={{ background: card.color }}>{index + 1}</span>
-                  <span className={styles.cardText}>
-                    <strong>{card.title}</strong>
-                    <span>{card.body || (isPublic ? "Draft point" : "No story text yet.")}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
+                  {!cards.length ? <div className={styles.empty}>No story points yet.</div> : null}
+                  {cards.map((card, index) => (
+                    <button
+                      type="button"
+                      key={card.id}
+                      className={cx(
+                        styles.card,
+                        card.id === selectedCardId && styles.active,
+                        getRenderableImageUrls(card).length > 0 && styles.hasImage,
+                      )}
+                      onClick={() => setSelectedCardId(card.id)}
+                      ref={(element) => {
+                        if (element) {
+                          tourCardRefs.current.set(card.id, element);
+                        } else {
+                          tourCardRefs.current.delete(card.id);
+                        }
+                      }}
+                    >
+                      <TourCardImage card={card} />
+                      <span className={styles.badge} style={{ background: card.color }}>{index + 1}</span>
+                      <span className={styles.cardText}>
+                        <strong>{card.title}</strong>
+                        <span>{card.body || (isPublic ? "Draft point" : "No story text yet.")}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </section>
 
             {!isPublic ? (
               <div className={styles.railFooter}>
@@ -1525,17 +1568,43 @@ export function MapTourPage() {
       </aside>
 
       {selectedCard && !isPublic ? (
-        <aside className={styles.editor}>
+        <aside className={cx(styles.editor, isPointEditorCollapsed && styles.editorCollapsed)}>
           <div className={styles.editorHeader}>
             <div>
               <div className={styles.kicker}>Point editor</div>
               <strong>{selectedCard.title}</strong>
             </div>
-            <button type="button" className={styles.iconButton} onClick={() => setSelectedCardId(null)}>
-              Close
-            </button>
+            <div className={styles.editorHeaderActions}>
+              <button
+                type="button"
+                className={cx(styles.iconButton, styles.editorIconButton)}
+                aria-label={isPointEditorCollapsed ? "Open point editor" : "Collapse point editor"}
+                aria-expanded={!isPointEditorCollapsed}
+                title={isPointEditorCollapsed ? "Open point editor" : "Collapse point editor"}
+                onClick={() => setIsPointEditorCollapsed((current) => !current)}
+              >
+                <span
+                  className={cx(
+                    styles.editorChevronIcon,
+                    !isPointEditorCollapsed && styles.editorChevronIconExpanded,
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                type="button"
+                className={cx(styles.iconButton, styles.editorIconButton)}
+                aria-label="Close point editor"
+                title="Close point editor"
+                onClick={() => setSelectedCardId(null)}
+              >
+                <span className={styles.editorCloseIcon} aria-hidden="true" />
+              </button>
+            </div>
           </div>
 
+          {!isPointEditorCollapsed ? (
+            <div className={styles.editorBody}>
           <label>
             <span>Title</span>
             <input
@@ -1656,6 +1725,8 @@ export function MapTourPage() {
               Delete
             </button>
           </div>
+            </div>
+          ) : null}
         </aside>
       ) : null}
       </main>

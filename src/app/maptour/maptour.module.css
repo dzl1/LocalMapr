@@ -390,6 +390,68 @@
   padding: 16px;
 }
 
+.editorCollapsed {
+  overflow: visible;
+}
+
+.editorHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.editorIconButton {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
+.editorChevronIcon {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.editorChevronIconExpanded {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.editorCloseIcon {
+  position: relative;
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.editorCloseIcon::before,
+.editorCloseIcon::after {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  width: 14px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.editorCloseIcon::before {
+  transform: rotate(45deg);
+}
+
+.editorCloseIcon::after {
+  transform: rotate(-45deg);
+}
+
+.editorBody {
+  display: contents;
+}
+
 .railHeader,
 .editorHeader {
   display: flex;
@@ -410,6 +472,10 @@
   color: #475569;
   font-size: 13px;
   line-height: 1.45;
+}
+
+.publicIntroBody {
+  padding: 12px 14px 14px;
 }
 
 .kicker {
@@ -568,7 +634,8 @@
   box-shadow: 0 8px 20px rgba(15, 36, 25, 0.08);
 }
 
-.detailsToggle {
+.detailsToggle,
+.panelToggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -584,7 +651,8 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
 }
 
-.detailsToggle span {
+.detailsToggle span,
+.panelToggle span {
   color: #475569;
   font-size: 12px;
   font-weight: 800;
@@ -664,6 +732,18 @@
   gap: 8px;
 }
 
+.pointsPanel {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.44);
+}
+
 .linkButton {
   border: 0;
   background: transparent;
@@ -680,9 +760,8 @@
   flex: 1 1 auto;
   flex-direction: column;
   gap: 10px;
-  margin-top: 14px;
   overflow: auto;
-  padding: 2px 2px 4px;
+  padding: 10px 10px 12px;
 }
 
 .card {
@@ -798,6 +877,8 @@
 
 .isPublic .railHeader,
 .isPublic .publicDescription,
+.isPublic .panelToggle,
+.isPublic .railCollapseButton,
 .isPublic .railLogoLink,
 .isPublic .card {
   pointer-events: auto;
@@ -806,7 +887,8 @@
 .isPublic .publicIntro {
   pointer-events: auto;
   margin-bottom: 12px;
-  padding: 14px 16px;
+  overflow: hidden;
+  padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 10px;
   background: rgba(15, 23, 42, 0.58);
@@ -822,6 +904,14 @@
 
 .isPublic .publicDescription {
   color: rgba(255, 255, 255, 0.86);
+}
+
+.isPublic .panelToggle {
+  background: rgba(15, 23, 42, 0.38);
+}
+
+.isPublic .panelToggle span {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .isEditorMode .cardText strong,
@@ -1230,25 +1320,137 @@
 
   .tourPage,
   .map {
-    min-height: 780px;
+    height: 100dvh;
+    min-height: 640px;
   }
 
   .rail {
-    top: auto;
-    right: 10px;
-    bottom: 10px;
-    left: 10px;
+    top: 8px;
+    right: 8px;
+    bottom: auto;
+    left: 8px;
     width: auto;
-    max-height: 38vh;
+    max-height: min(62dvh, 620px);
+    padding: 8px;
+  }
+
+  .railCollapsed {
+    right: auto;
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+
+  .railCollapsed .railCollapseButton {
+    width: 40px;
+    height: 40px;
+  }
+
+  .railCollapseButton {
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+  }
+
+  .railLogoLink {
+    width: 92px;
+    margin-bottom: 6px;
+    padding: 3px 4px;
+    border-radius: 6px;
+  }
+
+  .detailsCard,
+  .publicIntro,
+  .pointsPanel {
+    border-radius: 8px;
+  }
+
+  .detailsToggle,
+  .panelToggle {
+    min-height: 34px;
+    padding: 8px 10px;
+  }
+
+  .detailsCardBody,
+  .publicIntroBody,
+  .sharePanel {
+    padding: 10px;
+  }
+
+  .publicTitle {
+    font-size: 18px;
+  }
+
+  .publicDescription,
+  .descriptionInput {
+    max-height: 132px;
+    overflow: auto;
+  }
+
+  .pointsPanel {
+    margin-top: 8px;
+  }
+
+  .isEditorMode .cardList,
+  .isPublic .cardList,
+  .cardList {
+    gap: 10px;
+    padding: 8px;
+    scroll-padding-block: 0;
+  }
+
+  .card,
+  .isEditorMode .card,
+  .isPublic .card {
+    max-height: 400px;
+    overflow: auto;
+  }
+
+  .imageStack {
+    height: 150px;
+  }
+
+  .cardText strong {
+    font-size: 16px;
+  }
+
+  .cardText span,
+  .isEditorMode .cardText span,
+  .isPublic .cardText span {
+    max-height: 210px;
+    font-size: 14px;
   }
 
   .editor {
-    top: 38vh;
-    right: 10px;
-    bottom: auto;
-    left: 10px;
+    top: auto;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
     width: auto;
-    max-height: 28vh;
+    max-height: min(44dvh, 420px);
+    padding: 10px;
+  }
+
+  .editorCollapsed {
+    max-height: none;
+  }
+
+  .editorHeader {
+    align-items: center;
+  }
+
+  .editorHeaderActions {
+    gap: 6px;
+  }
+
+  .editorHeaderActions .iconButton {
+    min-height: 32px;
+    padding: 7px 9px;
+  }
+
+  .editorBody {
+    display: block;
   }
 
   .titleInput {
