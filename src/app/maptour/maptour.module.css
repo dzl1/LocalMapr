@@ -138,8 +138,47 @@
 }
 
 .notice {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
   color: #086242;
   background: #dff4e7;
+}
+
+.noticeText {
+  min-width: 0;
+}
+
+.noticeDismissButton,
+.alertDismissButton {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -5px -4px 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.noticeDismissButton:hover,
+.alertDismissButton:hover,
+.noticeDismissButton:focus-visible,
+.alertDismissButton:focus-visible {
+  background: rgba(15, 23, 42, 0.08);
+  outline: none;
+}
+
+.noticeDismissButton svg,
+.alertDismissButton svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
 }
 
 .error {
@@ -516,10 +555,18 @@
 }
 
 .alert {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
   border-color: rgba(14, 116, 144, 0.26);
   background: rgba(236, 254, 255, 0.85);
   color: #164e63;
   font-weight: 700;
+}
+
+.alertText {
+  min-width: 0;
 }
 
 .alertError {
@@ -881,6 +928,9 @@
 }
 
 .isPublic .publicIntro {
+  width: 100%;
+  min-height: 0;
+  flex: 0 0 auto;
   pointer-events: auto;
   margin-bottom: 12px;
   overflow: hidden;
@@ -903,6 +953,7 @@
 }
 
 .isPublic .panelToggle {
+  flex: 0 0 auto;
   background: rgba(15, 23, 42, 0.38);
 }
 

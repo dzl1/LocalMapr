@@ -708,6 +708,16 @@ export function MapTourPage() {
     element.style.height = `${element.scrollHeight}px`;
   }
 
+  function toggleStoryIntroPanel() {
+    if (isStoryIntroCollapsed) {
+      setIsStoryIntroCollapsed(false);
+      setIsStoryPointsCollapsed(true);
+      return;
+    }
+
+    setIsStoryIntroCollapsed(true);
+  }
+
   function openStoryDetailsPanel() {
     setIsTourDetailsCollapsed(false);
 
@@ -1269,7 +1279,19 @@ export function MapTourPage() {
           </div>
         </section>
 
-        {message ? <p className={styles.notice}>{message}</p> : null}
+        {message ? (
+          <div className={styles.notice} role="status" aria-live="polite">
+            <span className={styles.noticeText}>{message}</span>
+            <button
+              type="button"
+              className={styles.noticeDismissButton}
+              aria-label="Dismiss message"
+              onClick={() => setMessage("")}
+            >
+              <X size={16} strokeWidth={2.4} aria-hidden="true" />
+            </button>
+          </div>
+        ) : null}
         {error ? <p className={styles.error}>{error}</p> : null}
 
         <section className={styles.homePanel}>
@@ -1458,7 +1480,7 @@ export function MapTourPage() {
                   className={styles.panelToggle}
                   aria-label={isStoryIntroCollapsed ? "Open story description" : "Collapse story description"}
                   aria-expanded={!isStoryIntroCollapsed}
-                  onClick={() => setIsStoryIntroCollapsed((current) => !current)}
+                  onClick={toggleStoryIntroPanel}
                 >
                   <span>Story description</span>
                   <span
@@ -1581,7 +1603,19 @@ export function MapTourPage() {
               </section>
             )}
 
-            {message ? <p className={styles.alert}>{message}</p> : null}
+            {message ? (
+              <div className={styles.alert} role="status" aria-live="polite">
+                <span className={styles.alertText}>{message}</span>
+                <button
+                  type="button"
+                  className={styles.alertDismissButton}
+                  aria-label="Dismiss message"
+                  onClick={() => setMessage("")}
+                >
+                  <X size={16} strokeWidth={2.4} aria-hidden="true" />
+                </button>
+              </div>
+            ) : null}
             {error ? <p className={cx(styles.alert, styles.alertError)}>{error}</p> : null}
 
             <section className={cx(styles.pointsPanel, isStoryPointsCollapsed && styles.pointsPanelCollapsed)}>
