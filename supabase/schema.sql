@@ -82,6 +82,10 @@ create table if not exists public.contact_queries (
   source_path text,
   user_agent text,
   status text not null default 'new',
+  email_status text not null default 'pending',
+  email_provider_id text,
+  email_sent_at timestamptz,
+  email_error text,
   created_at timestamptz not null default now()
 );
 

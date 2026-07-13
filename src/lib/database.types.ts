@@ -46,6 +46,10 @@ export type Database = {
         Row: {
           created_at: string;
           email: string;
+          email_error: string | null;
+          email_provider_id: string | null;
+          email_sent_at: string | null;
+          email_status: string;
           id: string;
           message: string;
           name: string;
@@ -58,6 +62,10 @@ export type Database = {
         Insert: {
           created_at?: string;
           email: string;
+          email_error?: string | null;
+          email_provider_id?: string | null;
+          email_sent_at?: string | null;
+          email_status?: string;
           id?: string;
           message: string;
           name: string;
@@ -70,6 +78,10 @@ export type Database = {
         Update: {
           created_at?: string;
           email?: string;
+          email_error?: string | null;
+          email_provider_id?: string | null;
+          email_sent_at?: string | null;
+          email_status?: string;
           id?: string;
           message?: string;
           name?: string;

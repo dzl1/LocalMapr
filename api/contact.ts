@@ -10,6 +10,7 @@ import {
 
 type ContactPayload = {
   company?: string;
+  contactFaxNumber?: string;
   email?: string;
   message?: string;
   name?: string;
@@ -67,6 +68,7 @@ async function sendContactEmail({
 
   if (!apiKey || !fromEmail) {
     return {
+      emailId: null,
       error:
         "Email delivery is not configured. Add RESEND_API_KEY and CONTACT_FROM_EMAIL.",
     };
@@ -119,11 +121,14 @@ async function sendContactEmail({
     }
 
     return {
+      emailId: null,
       error: detail || `Resend returned status ${response.status}.`,
     };
   }
 
-  return { error: null };
+  const payload = (await response.json()) as { id?: string };
+
+  return { emailId: payload.id ?? null, error: null };
 }
 
 export default async function handleContact(
@@ -145,7 +150,7 @@ export default async function handleContact(
     return;
   }
 
-  if (cleanText(payload.company, 200)) {
+  if (cleanText(payload.contactFaxNumber ?? payload.company, 200)) {
     sendJson(response, 200, {
       message: "Thanks, your query has been sent.",
     });
@@ -192,16 +197,23 @@ export default async function handleContact(
     return;
   }
 
+  let contactQueryId: string | null = null;
+
   try {
-    const { error } = await supabase.from("contact_queries").insert({
+    const { data, error } = await supabase
+      .from("contact_queries")
+      .insert({
       email,
+      email_status: "pending",
       message,
       name,
       query_type: queryType,
       source_path: sourcePath,
       subject,
       user_agent: userAgent,
-    });
+      })
+      .select("id")
+      .single();
 
     if (error) {
       sendJson(response, 500, {
@@ -209,6 +221,8 @@ export default async function handleContact(
       });
       return;
     }
+
+    contactQueryId = data?.id ?? null;
   } catch (error) {
     sendJson(response, 500, {
       error: errorMessage(error, "Could not save your query."),
@@ -227,8 +241,38 @@ export default async function handleContact(
     });
 
     if (emailResult.error) {
+      if (contactQueryId) {
+        const { error } = await supabase
+          .from("contact_queries")
+          .update({
+            email_error: emailResult.error,
+            email_status: "failed",
+          })
+          .eq("id", contactQueryId);
+
+        if (error) {
+          console.error("Could not update failed contact email status", error);
+        }
+      }
+
       sendJson(response, 500, { error: emailResult.error });
       return;
+    }
+
+    if (contactQueryId) {
+      const { error } = await supabase
+        .from("contact_queries")
+        .update({
+          email_error: null,
+          email_provider_id: emailResult.emailId,
+          email_sent_at: new Date().toISOString(),
+          email_status: "sent",
+        })
+        .eq("id", contactQueryId);
+
+      if (error) {
+        console.error("Could not update contact email status", error);
+      }
     }
   } catch (error) {
     sendJson(response, 500, {

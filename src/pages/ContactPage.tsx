@@ -34,7 +34,7 @@ export function ContactPage() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     const payload = {
-      company: String(formData.get("company") ?? ""),
+      contactFaxNumber: String(formData.get("contactFaxNumber") ?? ""),
       email: String(formData.get("email") ?? ""),
       message: String(formData.get("message") ?? ""),
       name: String(formData.get("name") ?? ""),
@@ -134,8 +134,13 @@ export function ContactPage() {
           </label>
 
           <label className={styles.honeypot} aria-hidden="true">
-            <span>Company</span>
-            <input name="company" type="text" tabIndex={-1} autoComplete="off" />
+            <span>Leave this field blank</span>
+            <input
+              name="contactFaxNumber"
+              type="text"
+              tabIndex={-1}
+              autoComplete="new-password"
+            />
           </label>
 
           {feedback ? (
