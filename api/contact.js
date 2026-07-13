@@ -1,23 +1,12 @@
-import {
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+const {
   errorMessage,
   getAdminClient,
   getEnv,
   readRawBody,
   sendJson,
-  type ApiRequest,
-  type ApiResponse,
-} from "./_utils";
-
-type ContactPayload = {
-  company?: string;
-  contactFaxNumber?: string;
-  email?: string;
-  message?: string;
-  name?: string;
-  queryType?: string;
-  sourcePath?: string;
-  subject?: string;
-};
+} = require("./billing/runtime.js");
 
 const allowedQueryTypes = new Set([
   "Map Stories",
@@ -30,15 +19,15 @@ const allowedQueryTypes = new Set([
 
 const defaultContactEmail = "contact@localmapr.com";
 
-function cleanText(value: unknown, maxLength: number) {
+function cleanText(value, maxLength) {
   return String(value ?? "").trim().slice(0, maxLength);
 }
 
-function isEmail(value: string) {
+function isEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-function escapeHtml(value: string) {
+function escapeHtml(value) {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -54,13 +43,6 @@ async function sendContactEmail({
   queryType,
   sourcePath,
   subject,
-}: {
-  email: string;
-  message: string;
-  name: string;
-  queryType: string;
-  sourcePath: string | null;
-  subject: string;
 }) {
   const apiKey = getEnv("RESEND_API_KEY");
   const fromEmail = getEnv("CONTACT_FROM_EMAIL");
@@ -114,7 +96,7 @@ async function sendContactEmail({
     let detail = "";
 
     try {
-      const payload = (await response.json()) as { message?: string; error?: string };
+      const payload = await response.json();
       detail = payload.message || payload.error || "";
     } catch {
       detail = await response.text();
@@ -126,25 +108,40 @@ async function sendContactEmail({
     };
   }
 
-  const payload = (await response.json()) as { id?: string };
-
+  const payload = await response.json();
   return { emailId: payload.id ?? null, error: null };
 }
 
-export default async function handleContact(
-  request: ApiRequest,
-  response: ApiResponse,
-) {
+async function updateContactEmailStatus(supabase, contactQueryId, patch) {
+  if (!contactQueryId) {
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from("contact_queries")
+      .update(patch)
+      .eq("id", contactQueryId);
+
+    if (error) {
+      console.error("Could not update contact email status", error);
+    }
+  } catch (error) {
+    console.error("Contact email status update failed", error);
+  }
+}
+
+async function handleContact(request, response) {
   if (request.method !== "POST") {
     sendJson(response, 405, { error: "Method not allowed." });
     return;
   }
 
-  let payload: ContactPayload = {};
+  let payload = {};
 
   try {
     const body = await readRawBody(request);
-    payload = JSON.parse(String(body || "{}")) as ContactPayload;
+    payload = JSON.parse(String(body || "{}"));
   } catch {
     sendJson(response, 400, { error: "Invalid request body." });
     return;
@@ -186,31 +183,34 @@ export default async function handleContact(
   }
 
   if (message.length < 10) {
-    sendJson(response, 400, { error: "Please enter a message with a little more detail." });
+    sendJson(response, 400, {
+      error: "Please enter a message with a little more detail.",
+    });
     return;
   }
 
   const { supabase, error: supabaseError } = getAdminClient();
 
   if (supabaseError || !supabase) {
-    sendJson(response, 500, { error: supabaseError || "Contact storage is not configured." });
+    sendJson(response, 500, {
+      error: supabaseError || "Contact storage is not configured.",
+    });
     return;
   }
 
-  let contactQueryId: string | null = null;
+  let contactQueryId = null;
 
   try {
     const { data, error } = await supabase
       .from("contact_queries")
       .insert({
-      email,
-      email_status: "pending",
-      message,
-      name,
-      query_type: queryType,
-      source_path: sourcePath,
-      subject,
-      user_agent: userAgent,
+        email,
+        message,
+        name,
+        query_type: queryType,
+        source_path: sourcePath,
+        subject,
+        user_agent: userAgent,
       })
       .select("id")
       .single();
@@ -241,40 +241,27 @@ export default async function handleContact(
     });
 
     if (emailResult.error) {
-      if (contactQueryId) {
-        const { error } = await supabase
-          .from("contact_queries")
-          .update({
-            email_error: emailResult.error,
-            email_status: "failed",
-          })
-          .eq("id", contactQueryId);
-
-        if (error) {
-          console.error("Could not update failed contact email status", error);
-        }
-      }
+      await updateContactEmailStatus(supabase, contactQueryId, {
+        email_error: emailResult.error,
+        email_status: "failed",
+      });
 
       sendJson(response, 500, { error: emailResult.error });
       return;
     }
 
-    if (contactQueryId) {
-      const { error } = await supabase
-        .from("contact_queries")
-        .update({
-          email_error: null,
-          email_provider_id: emailResult.emailId,
-          email_sent_at: new Date().toISOString(),
-          email_status: "sent",
-        })
-        .eq("id", contactQueryId);
-
-      if (error) {
-        console.error("Could not update contact email status", error);
-      }
-    }
+    await updateContactEmailStatus(supabase, contactQueryId, {
+      email_error: null,
+      email_provider_id: emailResult.emailId,
+      email_sent_at: new Date().toISOString(),
+      email_status: "sent",
+    });
   } catch (error) {
+    await updateContactEmailStatus(supabase, contactQueryId, {
+      email_error: errorMessage(error, "Could not send your query email."),
+      email_status: "failed",
+    });
+
     sendJson(response, 500, {
       error: errorMessage(error, "Could not send your query email."),
     });
@@ -285,3 +272,14 @@ export default async function handleContact(
     message: "Thanks, your query has been sent.",
   });
 }
+
+module.exports = async function handler(request, response) {
+  try {
+    await handleContact(request, response);
+  } catch (error) {
+    console.error("contact handler failed:", error);
+    sendJson(response, 500, {
+      error: errorMessage(error, "Contact form failed unexpectedly."),
+    });
+  }
+};

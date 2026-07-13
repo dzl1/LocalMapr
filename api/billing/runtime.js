@@ -274,6 +274,7 @@ module.exports = {
   createStripeClient,
   errorMessage,
   getAdminClient,
+  getEnv,
   getAuthenticatedUser,
   getMapTourStripeConfig,
   getRequestOrigin,
