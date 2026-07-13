@@ -10,7 +10,7 @@ const appTypes = [
   {
     title: "Map Stories",
     copy: "Turn landmarks, field notes, and photos into guided routes people can open from any link.",
-    image: "/map-stories-card.svg",
+    image: "/map-stories-card-v3.jpg",
     imageAlt: "Map Stories preview showing route stops connected on a map",
     href: "/map-stories",
   },

@@ -18,6 +18,7 @@ const navItems = [
   { href: "/local-guides", label: "Local Guides" },
   { href: "/pricing", label: "Pricing" },
   { href: "/help", label: "Help" },
+  { href: "/contact", label: "Contact" },
 ];
 
 function classNames(...values: Array<string | false | null | undefined>) {

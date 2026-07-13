@@ -1,0 +1,58 @@
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="960" y2="540" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF7F1"/>
+      <stop offset="1" stop-color="#D9ECF5"/>
+    </linearGradient>
+    <linearGradient id="route2" x1="150" y1="390" x2="812" y2="138" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F05A4A"/>
+      <stop offset="0.55" stop-color="#1C8F63"/>
+      <stop offset="1" stop-color="#1659C8"/>
+    </linearGradient>
+    <filter id="cardShadow2" x="0" y="0" width="960" height="540" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#0E3C2B" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <rect width="960" height="540" rx="28" fill="url(#bg2)"/>
+
+  <g opacity="0.3">
+    <path d="M72 108H888" stroke="#A8CFC4" stroke-width="2"/>
+    <path d="M72 190H888" stroke="#A8CFC4" stroke-width="2"/>
+    <path d="M72 272H888" stroke="#A8CFC4" stroke-width="2"/>
+    <path d="M72 354H888" stroke="#A8CFC4" stroke-width="2"/>
+    <path d="M72 436H888" stroke="#A8CFC4" stroke-width="2"/>
+    <path d="M144 66V474" stroke="#A8CFC4" stroke-width="2"/>
+    <path d="M288 66V474" stroke="#A8CFC4" stroke-width="2"/>
+    <path d="M432 66V474" stroke="#A8CFC4" stroke-width="2"/>
+    <path d="M576 66V474" stroke="#A8CFC4" stroke-width="2"/>
+    <path d="M720 66V474" stroke="#A8CFC4" stroke-width="2"/>
+    <path d="M864 66V474" stroke="#A8CFC4" stroke-width="2"/>
+  </g>
+
+  <path d="M148 390C214 338 268 314 336 328C418 344 486 258 580 268C676 278 752 226 812 138" stroke="url(#route2)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" filter="url(#cardShadow2)"/>
+
+  <g>
+    <circle cx="148" cy="390" r="24" fill="#F05A4A"/>
+    <circle cx="148" cy="390" r="13" fill="white"/>
+    <circle cx="336" cy="328" r="24" fill="#1C8F63"/>
+    <circle cx="336" cy="328" r="13" fill="white"/>
+    <circle cx="580" cy="268" r="24" fill="#F2B544"/>
+    <circle cx="580" cy="268" r="13" fill="white"/>
+    <circle cx="812" cy="138" r="24" fill="#1659C8"/>
+    <circle cx="812" cy="138" r="13" fill="white"/>
+  </g>
+
+  <g filter="url(#cardShadow2)">
+    <rect x="88" y="76" width="266" height="72" rx="16" fill="#102136" fill-opacity="0.9"/>
+  </g>
+  <text x="118" y="122" fill="white" font-size="34" font-family="Arial, Helvetica, sans-serif" font-weight="700">Map Stories</text>
+
+  <g opacity="0.75">
+    <rect x="662" y="318" width="220" height="134" rx="18" fill="white" fill-opacity="0.66"/>
+    <rect x="684" y="344" width="174" height="14" rx="7" fill="#B6CBD7"/>
+    <rect x="684" y="370" width="140" height="12" rx="6" fill="#C7D8E2"/>
+    <rect x="684" y="392" width="164" height="12" rx="6" fill="#C7D8E2"/>
+    <rect x="684" y="414" width="98" height="12" rx="6" fill="#C7D8E2"/>
+  </g>
+</svg>

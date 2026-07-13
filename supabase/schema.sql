@@ -72,6 +72,19 @@ create table if not exists public.billing_events (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.contact_queries (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text not null,
+  query_type text not null,
+  subject text not null,
+  message text not null,
+  source_path text,
+  user_agent text,
+  status text not null default 'new',
+  created_at timestamptz not null default now()
+);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -153,6 +166,7 @@ alter table public.map_tour_purchases enable row level security;
 alter table public.subscriptions enable row level security;
 alter table public.super_admins enable row level security;
 alter table public.billing_events enable row level security;
+alter table public.contact_queries enable row level security;
 
 drop policy if exists "Users can read their own profile" on public.profiles;
 create policy "Users can read their own profile"
@@ -239,6 +253,11 @@ create policy "Super admins can read billing events"
 on public.billing_events for select
 using (public.is_super_admin());
 
+drop policy if exists "Super admins can read contact queries" on public.contact_queries;
+create policy "Super admins can read contact queries"
+on public.contact_queries for select
+using (public.is_super_admin());
+
 create index if not exists map_apps_owner_updated_idx
 on public.map_apps (owner_id, updated_at desc);
 
@@ -259,6 +278,12 @@ on public.billing_events (created_at desc);
 
 create index if not exists billing_events_customer_idx
 on public.billing_events (stripe_customer_id);
+
+create index if not exists contact_queries_created_idx
+on public.contact_queries (created_at desc);
+
+create index if not exists contact_queries_status_created_idx
+on public.contact_queries (status, created_at desc);
 
 create or replace function public.is_super_admin_user(user_id uuid)
 returns boolean

@@ -85,7 +85,7 @@ function readLocalEnvFile() {
   return cachedFileEnv;
 }
 
-function getEnv(name: string) {
+export function getEnv(name: string) {
   return process.env[name] ?? readLocalEnvFile()[name] ?? null;
 }
 

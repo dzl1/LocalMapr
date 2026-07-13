@@ -1,9 +1,11 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import contactHandler from "./api/contact";
 import mapTourCheckoutHandler from "./api/billing/map-tour-checkout";
 import mapTourCreditSyncHandler from "./api/billing/map-tour-credit-sync";
 
 const devApiHandlers = new Map([
+  ["/api/contact", contactHandler],
   ["/api/billing/map-tour-checkout", mapTourCheckoutHandler],
   ["/api/billing/map-tour-credit-sync", mapTourCreditSyncHandler],
 ]);

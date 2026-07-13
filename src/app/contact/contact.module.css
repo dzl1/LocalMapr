@@ -1,0 +1,228 @@
+.page {
+  min-height: 100vh;
+  color: #102136;
+  background: #f6faf7;
+  font-family: var(--font-sora), Arial, Helvetica, sans-serif;
+}
+
+.contactHeader,
+.hero,
+.contactGrid {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.hero {
+  padding: 64px 0 34px;
+}
+
+.hero p,
+.formPanel label span,
+.infoPanel p {
+  color: #086242;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 880px;
+  margin-top: 10px;
+  font-size: clamp(42px, 7vw, 78px);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.hero span {
+  display: block;
+  max-width: 720px;
+  margin-top: 18px;
+  color: #536172;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.contactGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(280px, 0.36fr);
+  gap: 20px;
+  align-items: start;
+  padding-bottom: 76px;
+}
+
+.formPanel,
+.infoPanel {
+  border: 1px solid #dfe7e6;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(16, 33, 54, 0.07);
+}
+
+.formPanel {
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.formPanel label {
+  display: grid;
+  gap: 8px;
+}
+
+.formPanel input,
+.formPanel select,
+.formPanel textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #cad9d5;
+  border-radius: 8px;
+  outline: none;
+  background: #fbfdfb;
+  color: #102136;
+  padding: 12px 13px;
+  font: inherit;
+  font-size: 15px;
+}
+
+.formPanel select {
+  cursor: pointer;
+}
+
+.formPanel textarea {
+  resize: vertical;
+}
+
+.formPanel input:focus,
+.formPanel select:focus,
+.formPanel textarea:focus {
+  border-color: #0d8f5a;
+  box-shadow: 0 0 0 3px rgba(13, 143, 90, 0.14);
+}
+
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.success,
+.error {
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.success {
+  color: #086242;
+  background: #dff4e7;
+}
+
+.error {
+  color: #8f2f22;
+  background: #ffe8e2;
+}
+
+.formPanel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: #0d8f5a;
+  color: #ffffff;
+  padding: 0 20px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.formPanel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.infoPanel {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+
+.infoPanel a {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #102136;
+  font-size: clamp(16px, 1.45vw, 22px);
+  font-weight: 850;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.infoPanel span {
+  color: #536172;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .formPanel button:hover:not(:disabled) {
+    background: #086242;
+  }
+
+  .infoPanel a:hover {
+    color: #086242;
+  }
+}
+
+@media (max-width: 920px) {
+  .contactGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .contactHeader,
+  .hero,
+  .contactGrid {
+    width: min(1180px, calc(100% - 28px));
+  }
+
+  .hero {
+    padding: 34px 0 24px;
+  }
+
+  .hero h1 {
+    font-size: clamp(36px, 12vw, 52px);
+  }
+
+  .hero span {
+    font-size: 16px;
+  }
+
+  .formPanel,
+  .infoPanel {
+    padding: 18px;
+  }
+
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formPanel button {
+    width: 100%;
+  }
+}
