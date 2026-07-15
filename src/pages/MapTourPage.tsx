@@ -70,6 +70,7 @@ const defaultCenter: [number, number] = [-35.205, 173.95];
 const defaultZoom = 11;
 const colors = ["#1f4834", "#2563eb", "#be123c", "#b45309", "#6d28d9"];
 const compactEditorLayoutQuery = "(max-width: 820px)";
+const pointIconCache = new Map<string, L.DivIcon>();
 
 function createCard(index: number, lat = defaultCenter[0], lng = defaultCenter[1]): TourCard {
   return {
@@ -86,13 +87,23 @@ function createCard(index: number, lat = defaultCenter[0], lng = defaultCenter[1
 }
 
 function createPointIcon(index: number, color: string, active: boolean) {
-  return L.divIcon({
+  const cacheKey = `${index}:${color}:${active ? "active" : "idle"}`;
+  const cachedIcon = pointIconCache.get(cacheKey);
+
+  if (cachedIcon) {
+    return cachedIcon;
+  }
+
+  const icon = L.divIcon({
     className: styles.pointIcon,
     html: `<span style="--point-color:${color}" class="${active ? styles.pointIconActive : ""}">${index}</span>`,
     iconAnchor: [20, 20],
     iconSize: [40, 40],
     popupAnchor: [0, -20],
   });
+
+  pointIconCache.set(cacheKey, icon);
+  return icon;
 }
 
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -258,23 +269,33 @@ function TrackViewport({
   isPaused: () => boolean;
   onChange: (next: { center: [number, number]; zoom: number }) => void;
 }) {
+  const lastViewportRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
+
+  function handleMoveEnd(event: L.LeafletEvent) {
+    if (isPaused()) {
+      return;
+    }
+
+    const map = event.target as L.Map;
+    const center = map.getCenter();
+    const next = { center: [center.lat, center.lng] as [number, number], zoom: map.getZoom() };
+    const previous = lastViewportRef.current;
+
+    if (
+      previous &&
+      previous.zoom === next.zoom &&
+      Math.abs(previous.center[0] - next.center[0]) < 1e-7 &&
+      Math.abs(previous.center[1] - next.center[1]) < 1e-7
+    ) {
+      return;
+    }
+
+    lastViewportRef.current = next;
+    onChange(next);
+  }
+
   useMapEvents({
-    moveend(event) {
-      if (isPaused()) {
-        return;
-      }
-
-      const center = event.target.getCenter();
-      onChange({ center: [center.lat, center.lng], zoom: event.target.getZoom() });
-    },
-    zoomend(event) {
-      if (isPaused()) {
-        return;
-      }
-
-      const center = event.target.getCenter();
-      onChange({ center: [center.lat, center.lng], zoom: event.target.getZoom() });
-    },
+    moveend: handleMoveEnd,
   });
 
   return null;
@@ -1399,13 +1420,15 @@ export function MapTourPage() {
           attribution="Tiles &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community"
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           keepBuffer={6}
-          updateWhenIdle={false}
+          updateWhenIdle
+          updateWhenZooming={false}
         />
         <TileLayer
           attribution="Reference labels &copy; Esri"
           url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
           keepBuffer={6}
-          updateWhenIdle={false}
+          updateWhenIdle
+          updateWhenZooming={false}
           zIndex={2}
         />
         <TrackViewport
