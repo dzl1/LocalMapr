@@ -38,6 +38,11 @@ import {
   isMissingMapTourPurchasesTable,
 } from "@/lib/mapTourBilling";
 import {
+  MAP_STORY_IMAGE_BUCKET,
+  MAP_STORY_IMAGE_MAX_MB,
+  prepareMapStoryImage,
+} from "@/lib/mapStoryImages";
+import {
   createBrowserSupabaseClient,
   getSupabaseBrowserConfig,
 } from "@/lib/supabase/client";
@@ -430,6 +435,7 @@ export function MapTourPage() {
   const [isPointEditorCollapsed, setIsPointEditorCollapsed] = useState(true);
   const [isCompactEditorLayout, setIsCompactEditorLayout] = useState(isCompactEditorViewport);
   const [deletingTourId, setDeletingTourId] = useState<string | null>(null);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [viewport, setViewport] = useState<{ center: [number, number]; zoom: number }>({
     center: defaultCenter,
     zoom: defaultZoom,
@@ -449,6 +455,7 @@ export function MapTourPage() {
   const wheelStepTimerRef = useRef<number | null>(null);
   const descriptionTextAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const storyTextAreaRef = useRef<HTMLTextAreaElement | null>(null);
+  const imageUploadRef = useRef<HTMLInputElement | null>(null);
 
   const selectedCard = useMemo(
     () => cards.find((card) => card.id === selectedCardId) || null,
@@ -1060,6 +1067,52 @@ export function MapTourPage() {
     updateSelectedCard({
       imageUrls: selectedCard.imageUrls.filter((_, itemIndex) => itemIndex !== index),
     });
+  }
+
+  async function uploadImages(files: FileList | null) {
+    if (!files?.length || !selectedCard || !app || !user) {
+      return;
+    }
+
+    setIsUploadingImages(true);
+    setError("");
+    setMessage("");
+    const supabase = createBrowserSupabaseClient();
+    const uploadedUrls: string[] = [];
+    const uploadedPaths: string[] = [];
+
+    try {
+      for (const file of Array.from(files)) {
+        const image = await prepareMapStoryImage(file);
+        const path = `${user.id}/${app.id}/${selectedCard.id}/${crypto.randomUUID()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from(MAP_STORY_IMAGE_BUCKET)
+          .upload(path, image, { contentType: "image/jpeg", upsert: false });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data } = supabase.storage.from(MAP_STORY_IMAGE_BUCKET).getPublicUrl(path);
+        uploadedPaths.push(path);
+        uploadedUrls.push(data.publicUrl);
+      }
+
+      updateSelectedCard({ imageUrls: [...selectedCard.imageUrls, ...uploadedUrls] });
+      setMessage(
+        `${uploadedUrls.length} image${uploadedUrls.length === 1 ? "" : "s"} uploaded and reduced to ${MAP_STORY_IMAGE_MAX_MB} MB or less. Save the story to keep the change.`,
+      );
+    } catch (uploadError) {
+      if (uploadedPaths.length) {
+        await supabase.storage.from(MAP_STORY_IMAGE_BUCKET).remove(uploadedPaths);
+      }
+      setError(uploadError instanceof Error ? uploadError.message : "The image upload failed.");
+    } finally {
+      setIsUploadingImages(false);
+      if (imageUploadRef.current) {
+        imageUploadRef.current.value = "";
+      }
+    }
   }
 
   async function persistChanges(
@@ -1854,17 +1907,37 @@ export function MapTourPage() {
 
               <div className={styles.imageEditor}>
                 <div className={styles.imageEditorHeader}>
-                  <span>Image URLs</span>
-                  <button
-                    type="button"
-                    className={styles.miniAddButton}
-                    onClick={addImageUrl}
-                    aria-label="Add image URL"
-                    title="Add image URL"
-                  >
-                    <ImagePlus size={18} strokeWidth={2.4} aria-hidden="true" />
-                  </button>
+                  <span>Images</span>
+                  <div className={styles.imageActions}>
+                    <input
+                      ref={imageUploadRef}
+                      className={styles.hiddenImageInput}
+                      type="file"
+                      accept="image/*,.heic,.heif"
+                      multiple
+                      onChange={(event) => void uploadImages(event.target.files)}
+                    />
+                    <button
+                      type="button"
+                      className={styles.uploadImageButton}
+                      onClick={() => imageUploadRef.current?.click()}
+                      disabled={isUploadingImages}
+                    >
+                      <ImagePlus size={17} strokeWidth={2.4} aria-hidden="true" />
+                      {isUploadingImages ? "Converting…" : "Upload"}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.miniAddButton}
+                      onClick={addImageUrl}
+                      aria-label="Add image URL"
+                      title="Add image URL"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
+                <p className={styles.imageHelp}>JPEG, PNG, WebP, HEIC or HEIF. Converted to JPEG and limited to 2 MB.</p>
                 <div className={styles.imageUrlList}>
                   {(selectedCard.imageUrls.length ? selectedCard.imageUrls : [""]).map((imageUrl, index) => (
                     <div className={styles.imageUrlRow} key={`${selectedCard.id}-image-${index}`}>

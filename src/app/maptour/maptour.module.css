@@ -1135,6 +1135,43 @@
   font-weight: 800;
 }
 
+.imageActions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.hiddenImageInput {
+  display: none;
+}
+
+.uploadImageButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  border: 1px solid rgba(31, 72, 52, 0.22);
+  border-radius: 999px;
+  background: #fff;
+  color: #1f4834;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.uploadImageButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.imageHelp {
+  margin: -2px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .miniAddButton {
   display: inline-flex;
   align-items: center;
