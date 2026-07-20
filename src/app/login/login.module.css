@@ -148,6 +148,15 @@
   line-height: 1.5;
 }
 
+.form .resendButton {
+  justify-self: start;
+  padding: 0;
+  color: #086242;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .setupPanel {
   padding: 28px;
 }

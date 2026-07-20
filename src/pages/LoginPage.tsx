@@ -18,6 +18,8 @@ export function LoginPage() {
   const [mode, setMode] = useState<Mode>("login");
   const [message, setMessage] = useState(searchParams.get("error") ?? "");
   const [pending, setPending] = useState(false);
+  const [resendPending, setResendPending] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState("");
   const isConfigured = Boolean(getSupabaseBrowserConfig());
   const next = searchParams.get("next") ?? "/dashboard";
 
@@ -68,21 +70,50 @@ export function LoginPage() {
     setPending(false);
 
     if (result.error) {
+      if (result.error.code === "email_not_confirmed") {
+        setConfirmationEmail(email);
+      }
       setMessage(result.error.message);
       return;
     }
 
     if (!isUserEmailVerified(result.data.user)) {
       await supabase.auth.signOut();
+      setConfirmationEmail(email);
       setMessage(
         mode === "signup"
-          ? "Check your email to confirm your account, then log in."
+          ? "If this email is new, check your inbox, junk, or quarantine folder for a confirmation link. If you already have an account, log in instead."
           : EMAIL_VERIFICATION_REQUIRED_MESSAGE,
       );
       return;
     }
 
     navigate(next);
+  }
+
+  async function resendConfirmation() {
+    if (!confirmationEmail) {
+      return;
+    }
+
+    setResendPending(true);
+    setMessage("");
+
+    const supabase = createBrowserSupabaseClient();
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: confirmationEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
+    });
+
+    setResendPending(false);
+    setMessage(
+      error
+        ? error.message
+        : "Confirmation email resent. Check your inbox, junk, or quarantine folder.",
+    );
   }
 
   return (
@@ -156,6 +187,16 @@ export function LoginPage() {
                     : "Create account"}
               </button>
               {message ? <p className={styles.message}>{message}</p> : null}
+              {confirmationEmail ? (
+                <button
+                  className={styles.resendButton}
+                  disabled={pending || resendPending}
+                  type="button"
+                  onClick={() => void resendConfirmation()}
+                >
+                  {resendPending ? "Resending..." : "Resend confirmation email"}
+                </button>
+              ) : null}
             </form>
           </div>
         ) : (
