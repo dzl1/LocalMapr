@@ -1,12 +1,15 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { createRequire } from "node:module";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   createClient,
   type SupabaseClient,
 } from "@supabase/supabase-js";
-import Stripe from "stripe";
+import type Stripe from "stripe";
 import type { Database } from "../src/lib/database.types";
+
+const require = createRequire(import.meta.url);
 
 export type ApiRequest = IncomingMessage & {
   method?: string;
@@ -191,7 +194,15 @@ export function createStripeClient() {
     return null;
   }
 
-  return new Stripe(secretKey, {
+  // Lazy load Stripe so non-billing API routes do not fail during module init.
+  const stripeModule = require("stripe") as { default?: typeof Stripe };
+  const StripeConstructor = stripeModule.default;
+
+  if (!StripeConstructor) {
+    return null;
+  }
+
+  return new StripeConstructor(secretKey, {
     apiVersion: "2026-05-27.dahlia",
   });
 }

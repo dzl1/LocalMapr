@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { randomUUID } from "node:crypto";
 import type { Json } from "../../src/lib/database.types";
 import type { Database } from "../../src/lib/database.types";
 import {
@@ -186,7 +187,7 @@ async function handleCreateMapTour(
       config,
       description,
       owner_id: user.id,
-      slug: `${slugBase}-${crypto.randomUUID().slice(0, 8)}`,
+      slug: `${slugBase}-${randomUUID().slice(0, 8)}`,
       title,
     })
     .select("*")
