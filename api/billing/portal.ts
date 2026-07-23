@@ -1,5 +1,4 @@
 import {
-  createStripeClient,
   errorMessage,
   getAdminClient,
   getAuthenticatedUser,
@@ -8,6 +7,7 @@ import {
   type ApiRequest,
   type ApiResponse,
 } from "../_utils";
+import { createStripeClient } from "../_stripe";
 
 export default async function handler(
   request: ApiRequest,

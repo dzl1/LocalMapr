@@ -1,15 +1,11 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createRequire } from "node:module";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   createClient,
   type SupabaseClient,
 } from "@supabase/supabase-js";
-import type Stripe from "stripe";
 import type { Database } from "../src/lib/database.types";
-
-const require = createRequire(import.meta.url);
 
 export type ApiRequest = IncomingMessage & {
   method?: string;
@@ -169,41 +165,6 @@ export function createSupabaseAdminClient():
       autoRefreshToken: false,
       persistSession: false,
     },
-  });
-}
-
-function getStripeSecretKey() {
-  return getEnv("STRIPE_SECRET_KEY");
-}
-
-export function getMapTourStripeConfig() {
-  const secretKey = getStripeSecretKey();
-  const tourCreditPriceId = getEnv("STRIPE_MAP_TOUR_CREDIT_PRICE_ID");
-
-  if (!secretKey || !tourCreditPriceId) {
-    return null;
-  }
-
-  return { secretKey, tourCreditPriceId };
-}
-
-export function createStripeClient() {
-  const secretKey = getStripeSecretKey();
-
-  if (!secretKey) {
-    return null;
-  }
-
-  // Lazy load Stripe so non-billing API routes do not fail during module init.
-  const stripeModule = require("stripe") as { default?: typeof Stripe };
-  const StripeConstructor = stripeModule.default;
-
-  if (!StripeConstructor) {
-    return null;
-  }
-
-  return new StripeConstructor(secretKey, {
-    apiVersion: "2026-05-27.dahlia",
   });
 }
 
