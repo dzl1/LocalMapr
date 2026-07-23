@@ -1,7 +1,6 @@
 create extension if not exists pgcrypto;
 
--- Public image URLs are used by published stories. Uploads are restricted to
--- each authenticated user's own top-level folder and capped at 2 MiB.
+-- Public image URLs are used by published stories. Stored files are capped at 2 MiB.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'map-story-images',
@@ -14,34 +13,6 @@ on conflict (id) do update
 set public = excluded.public,
     file_size_limit = excluded.file_size_limit,
     allowed_mime_types = excluded.allowed_mime_types;
-
-drop policy if exists "Users can upload their own map story images" on storage.objects;
-create policy "Users can upload their own map story images"
-on storage.objects for insert to authenticated
-with check (
-  bucket_id = 'map-story-images'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
-
-drop policy if exists "Users can update their own map story images" on storage.objects;
-create policy "Users can update their own map story images"
-on storage.objects for update to authenticated
-using (
-  bucket_id = 'map-story-images'
-  and owner_id = auth.uid()::text
-)
-with check (
-  bucket_id = 'map-story-images'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
-
-drop policy if exists "Users can delete their own map story images" on storage.objects;
-create policy "Users can delete their own map story images"
-on storage.objects for delete to authenticated
-using (
-  bucket_id = 'map-story-images'
-  and owner_id = auth.uid()::text
-);
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -132,6 +103,57 @@ create table if not exists public.contact_queries (
   created_at timestamptz not null default now()
 );
 
+-- Object paths are user-id/story-id/point-id/file.jpg. Only a story which
+-- consumed a completed paid credit may write to this bucket.
+drop policy if exists "Users can upload their own map story images" on storage.objects;
+drop policy if exists "Users can upload paid map story images" on storage.objects;
+create policy "Users can upload paid map story images"
+on storage.objects for insert to authenticated
+with check (
+  bucket_id = 'map-story-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+  and exists (
+    select 1
+    from public.map_tour_purchases purchase
+    where purchase.user_id = auth.uid()
+      and purchase.credit_type = 'tour'
+      and purchase.status in ('paid', 'completed')
+      and purchase.used_at is not null
+      and purchase.used_for_app_id::text = (storage.foldername(name))[2]
+  )
+);
+
+drop policy if exists "Users can update their own map story images" on storage.objects;
+drop policy if exists "Users can update paid map story images" on storage.objects;
+create policy "Users can update paid map story images"
+on storage.objects for update to authenticated
+using (
+  bucket_id = 'map-story-images'
+  and owner_id = auth.uid()::text
+)
+with check (
+  bucket_id = 'map-story-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+  and exists (
+    select 1
+    from public.map_tour_purchases purchase
+    where purchase.user_id = auth.uid()
+      and purchase.credit_type = 'tour'
+      and purchase.status in ('paid', 'completed')
+      and purchase.used_at is not null
+      and purchase.used_for_app_id::text = (storage.foldername(name))[2]
+  )
+);
+
+drop policy if exists "Users can delete their own map story images" on storage.objects;
+drop policy if exists "Users can delete their map story images" on storage.objects;
+create policy "Users can delete their map story images"
+on storage.objects for delete to authenticated
+using (
+  bucket_id = 'map-story-images'
+  and owner_id = auth.uid()::text
+);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -142,10 +164,54 @@ begin
 end;
 $$;
 
+-- Field App layer geometry is stored in map_apps.config. Limit the combined
+-- stored JSONB layer payload for each account to 10 MiB. The advisory lock
+-- prevents simultaneous saves from racing past the account quota.
+create or replace function public.enforce_field_layer_storage_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  storage_limit_bytes constant bigint := 10 * 1024 * 1024;
+  existing_layer_bytes bigint;
+  new_layer_bytes bigint;
+begin
+  if new.app_type <> 'field_app' then
+    return new;
+  end if;
+
+  perform pg_advisory_xact_lock(hashtext(new.owner_id::text));
+
+  select coalesce(sum(pg_column_size(coalesce(config->'layers', '[]'::jsonb))), 0)
+  into existing_layer_bytes
+  from public.map_apps
+  where owner_id = new.owner_id
+    and app_type = 'field_app'
+    and id <> new.id;
+
+  new_layer_bytes := pg_column_size(coalesce(new.config->'layers', '[]'::jsonb));
+
+  if existing_layer_bytes + new_layer_bytes > storage_limit_bytes then
+    raise exception using
+      errcode = 'P0001',
+      message = 'Your Field App layers exceed the 10 MB free storage limit. Remove or simplify a layer before saving.';
+  end if;
+
+  return new;
+end;
+$$;
+
 drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at
 before update on public.profiles
 for each row execute function public.set_updated_at();
+
+drop trigger if exists field_layer_storage_limit on public.map_apps;
+create trigger field_layer_storage_limit
+before insert or update of owner_id, app_type, config on public.map_apps
+for each row execute function public.enforce_field_layer_storage_limit();
 
 drop trigger if exists map_apps_set_updated_at on public.map_apps;
 create trigger map_apps_set_updated_at

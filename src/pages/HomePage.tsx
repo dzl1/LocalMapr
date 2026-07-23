@@ -26,6 +26,7 @@ const appTypes = [
     copy: "Collect lightweight place-based stories, observations, and project updates with simple map-first workflows.",
     image: "/field-apps-card.png",
     imageAlt: "Field Maps preview showing capture points and field entries",
+    href: "/dashboard",
   },
 ];
 

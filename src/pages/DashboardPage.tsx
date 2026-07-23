@@ -569,6 +569,17 @@ export function DashboardPage() {
                           </Link>
                         ) : null}
                       </div>
+                    ) : app.app_type === "field_app" ? (
+                      <div className={styles.appLinks}>
+                        <Link to={`/field-apps/${app.id}`}>Open editor</Link>
+                      </div>
+                    ) : app.app_type === "local_guide" ? (
+                      <div className={styles.appLinks}>
+                        <Link to={`/local-guides/${app.id}`}>Open editor</Link>
+                        {app.status === "published" ? (
+                          <Link to={`/guide/${app.slug}`} target="_blank" rel="noreferrer">Open public</Link>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                   <div className={styles.appMeta}>

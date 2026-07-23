@@ -1,0 +1,62 @@
+.page { min-height: 100vh; color: #102136; background: #eef4f0; font-family: var(--font-sora), Arial, sans-serif; }
+.header { height: 70px; display: grid; grid-template-columns: 220px minmax(220px, 1fr) auto; align-items: center; gap: 20px; padding: 0 22px; border-bottom: 1px solid #d9e4de; background: #fff; }
+.back { display: inline-flex; align-items: center; gap: 8px; color: #425469; font-size: 14px; font-weight: 750; }
+.title { width: min(540px, 100%); justify-self: center; padding: 9px 12px; border: 1px solid transparent; border-radius: 7px; color: #102136; background: transparent; text-align: center; font: inherit; font-size: 17px; font-weight: 800; }
+.title:focus { outline: none; border-color: #b9d7c9; background: #f6faf7; }
+.headerActions { justify-self: end; display: flex; align-items: center; gap: 8px; }
+.exportGroup { display: flex; align-items: stretch; }
+.exportGroup select { min-width: 66px; padding: 0 24px 0 9px; border: 1px solid #bdd5c8; border-right: 0; border-radius: 8px 0 0 8px; color: #284b3a; background: #fff; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.exportGroup select:focus { position: relative; outline: 2px solid rgba(13,143,90,.16); border-color: #77a98f; }
+.save, .export { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 14px; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.save { border: 0; color: #fff; background: #0d8f5a; }
+.save:disabled { color: #708076; background: #e5ece8; cursor: default; }
+.export { border: 1px solid #bdd5c8; border-radius: 0 8px 8px 0; color: #086242; background: #f4faf6; }
+.export:hover:not(:disabled) { border-color: #8db8a1; background: #eaf6ef; }
+.export:disabled { color: #708076; background: #eef2ef; cursor: wait; }
+.workspace { height: calc(100vh - 70px); display: grid; grid-template-columns: 380px minmax(0, 1fr); }
+.sidebar { overflow-y: auto; padding: 24px; border-right: 1px solid #d9e4de; background: #f8fbf9; }
+.intro > span { color: #0d8f5a; font-size: 11px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.intro h1 { margin-top: 5px; font-size: 28px; }
+.intro p { margin-top: 8px; color: #5c6b78; font-size: 13px; line-height: 1.55; }
+.dropzone { display: grid; justify-items: center; gap: 8px; margin-top: 22px; padding: 24px 16px; border: 1.5px dashed #a9c8b7; border-radius: 10px; color: #286246; background: #fff; text-align: center; transition: .16s ease; }
+.dropzoneActive { border-color: #0d8f5a; background: #e7f6ed; transform: scale(1.01); }
+.dropzone strong { color: #18382b; font-size: 14px; }
+.dropzone span { color: #6b7a72; font-size: 11px; }
+.dropzone button { margin-top: 5px; padding: 9px 13px; border: 1px solid #bdd5c8; border-radius: 7px; color: #086242; background: #f4faf6; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.storageMeter { display: grid; gap: 7px; margin-top: 12px; padding: 11px 12px; border: 1px solid #dce6e0; border-radius: 8px; background: #fff; }
+.storageMeter div { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; }
+.storageMeter span, .storageMeter small { color: #6b7a72; }
+.storageMeter progress { width: 100%; height: 7px; overflow: hidden; border: 0; border-radius: 99px; background: #e3ebe6; accent-color: #0d8f5a; }
+.storageMeter progress::-webkit-progress-bar { border-radius: 99px; background: #e3ebe6; }
+.storageMeter progress::-webkit-progress-value { border-radius: 99px; background: #0d8f5a; }
+.storageMeter small { font-size: 9px; line-height: 1.45; }
+.error, .message { margin-top: 12px; padding: 10px 12px; border-radius: 7px; font-size: 12px; line-height: 1.45; }
+.error { color: #842f24; background: #ffe9e4; }.message { color: #086242; background: #e1f3e8; }
+.pointHeading { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; padding-bottom: 10px; border-bottom: 1px solid #dce6e0; }
+.pointHeading div { display: flex; align-items: center; gap: 7px; }.pointHeading strong { font-size: 13px; }.pointHeading span { color: #738078; font-size: 11px; }
+.addPoint { width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 11px; padding: 10px; border: 1px solid #b9d4c6; border-radius: 7px; color: #087149; background: #fff; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.addPointActive { color: #fff; border-color: #0d8f5a; background: #0d8f5a; }
+.pointList { display: grid; gap: 10px; margin-top: 10px; }
+.pointCard { padding: 12px; border: 1px solid #dce5e0; border-radius: 8px; background: #fff; cursor: pointer; }.pointCardSelected { border-color: #68a988; box-shadow: 0 0 0 2px rgba(13,143,90,.1); }
+.pointCardTop { display: grid; grid-template-columns: 23px 1fr 27px; align-items: center; gap: 7px; }.pointCardTop > span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: #fff; background: #0d8f5a; font-size: 10px; font-weight: 850; }.pointCardTop strong { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }.pointCardTop button { display: grid; place-items: center; width: 27px; height: 27px; border: 0; border-radius: 5px; color: #9a4235; background: transparent; cursor: pointer; }
+.pointCard label { display: grid; gap: 4px; margin-top: 10px; color: #647168; font-size: 10px; font-weight: 750; }.pointCard input, .pointCard textarea { width: 100%; padding: 8px; border: 1px solid #d9e3dd; border-radius: 6px; color: #1c3428; background: #fbfdfc; font: inherit; font-size: 12px; resize: vertical; }.pointCard input:focus, .pointCard textarea:focus { outline: 2px solid rgba(13,143,90,.14); border-color: #70aa8a; }.pointCard small { display: block; margin-top: 8px; color: #879089; font-size: 9px; }
+.layerHeading { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; padding-bottom: 10px; border-bottom: 1px solid #dce6e0; }
+.layerHeading div { display: flex; align-items: center; gap: 7px; }.layerHeading strong { font-size: 13px; }.layerHeading span { color: #738078; font-size: 11px; }
+.layerList { display: grid; gap: 10px; margin-top: 12px; }
+.layer { padding: 12px; border: 1px solid #dce5e0; border-radius: 8px; background: #fff; }
+.layerTop { display: grid; grid-template-columns: 18px minmax(0, 1fr) 27px 28px; gap: 8px; align-items: center; }
+.layerName { min-width: 0; padding: 5px 6px; border: 1px solid transparent; border-radius: 5px; color: #20352b; background: transparent; font: inherit; font-size: 13px; font-weight: 750; }
+.layerName:focus { outline: none; border-color: #bdd5c8; background: #f6faf7; }
+.color { width: 27px; height: 27px; padding: 1px; border: 0; border-radius: 5px; background: transparent; cursor: pointer; }
+.remove { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 5px; color: #9a4235; background: transparent; cursor: pointer; }.remove:hover { background: #fff0ed; }
+.layer p { margin: 6px 0 0 26px; color: #7a857e; font-size: 10px; }
+.empty { padding: 18px 8px; color: #75827a; font-size: 12px; line-height: 1.5; text-align: center; }
+.mapWrap { position: relative; min-width: 0; }.map { width: 100%; height: 100%; background: #dce7df; }
+.pointMarker { position: relative; display: block; width: 28px; height: 28px; border: 3px solid #fff; border-radius: 50% 50% 50% 0; background: #0d8f5a; box-shadow: 0 3px 9px rgba(16,33,54,.35); transform: rotate(-45deg); transition: transform .15s ease; }.pointMarker > span { position: absolute; width: 8px; height: 8px; top: 7px; left: 7px; border-radius: 50%; background: #fff; }.pointMarkerSelected { background: #102136; transform: rotate(-45deg) scale(1.18); }
+.pointPopup article { min-width: 190px; max-width: 280px; padding: 3px; }.pointPopup article > span { color: #0d8f5a; font-size: 9px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }.pointPopup h3 { margin-top: 5px; color: #142b20; font-size: 16px; line-height: 1.25; }.pointPopup p { margin-top: 8px; color: #53645b; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }.pointPopup small { display: block; margin-top: 10px; color: #8a938e; font-size: 9px; }
+.importedPopup { min-width: 180px; max-width: 280px; }.importedPopup h3 { margin-bottom: 8px; color: #153225; font-size: 15px; }.importedPopup p { display: grid; grid-template-columns: minmax(55px, .7fr) 1fr; gap: 8px; margin-top: 5px; color: #55645c; font-size: 11px; line-height: 1.35; }.importedPopup strong { overflow-wrap: anywhere; color: #243c30; text-transform: capitalize; }.importedPopup span { overflow-wrap: anywhere; }
+.placementHint { position: absolute; z-index: 600; top: 18px; left: 50%; display: flex; align-items: center; gap: 7px; padding: 10px 14px; border-radius: 99px; color: #fff; background: #102f23; box-shadow: 0 8px 20px rgba(16,33,54,.22); transform: translateX(-50%); font-size: 12px; font-weight: 800; pointer-events: none; }
+.mapEmpty { position: absolute; z-index: 500; top: 50%; left: 50%; display: grid; justify-items: center; gap: 7px; width: 270px; padding: 20px; border: 1px solid rgba(204,218,210,.9); border-radius: 10px; color: #315642; background: rgba(255,255,255,.94); box-shadow: 0 12px 32px rgba(16,33,54,.13); transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+.mapEmpty strong { font-size: 14px; }.mapEmpty span { color: #718079; font-size: 11px; }
+.state { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; color: #102136; background: #f6faf7; text-align: center; }.state p { color: #627064; }.state a { color: #087149; font-weight: 800; }
+@media (max-width: 760px) { .header { grid-template-columns: auto 1fr auto; gap: 8px; padding: 0 12px; }.back { font-size: 0; }.back svg { width: 21px; height: 21px; }.title { font-size: 14px; }.headerActions { gap: 5px; }.exportGroup select { min-width: 57px; padding-left: 7px; font-size: 10px; }.save, .export { padding: 0 9px; font-size: 0; }.save svg, .export svg { width: 20px; height: 20px; }.workspace { height: auto; min-height: calc(100vh - 70px); grid-template-columns: 1fr; }.sidebar { border-right: 0; }.mapWrap { height: 58vh; min-height: 420px; } }

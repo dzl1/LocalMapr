@@ -4,6 +4,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { ContactPage } from "./pages/ContactPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { FieldAppEditorPage } from "./pages/FieldAppEditorPage";
 import { HelpPage } from "./pages/HelpPage";
 import { HomePage } from "./pages/HomePage";
 import { LocalGuideEditorPage } from "./pages/LocalGuideEditorPage";
@@ -28,6 +29,7 @@ export default function App() {
     location.pathname.startsWith("/story/") ||
     location.pathname.startsWith("/tour/") ||
     location.pathname.startsWith("/guide/") ||
+    location.pathname.startsWith("/field-apps/") ||
     location.pathname.startsWith("/local-guides/") ||
     (!isMapStoriesHome && location.pathname.startsWith("/map-stories/")) ||
     location.pathname.startsWith("/map-tour/");
@@ -39,6 +41,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/field-apps/:id" element={<FieldAppEditorPage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/contact" element={<ContactPage />} />

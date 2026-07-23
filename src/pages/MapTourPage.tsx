@@ -35,6 +35,7 @@ import {
   FREE_MAP_TOUR_POINT_LIMIT,
   getMapTourPointLimit,
   getUnusedTourCreditCount,
+  isPaidMapTourCreditStatus,
   isMissingMapTourPurchasesTable,
 } from "@/lib/mapTourBilling";
 import {
@@ -462,6 +463,16 @@ export function MapTourPage() {
     [cards, selectedCardId],
   );
   const selectedPointLimit = getMapTourPointLimit(isAdmin);
+  const isPaidStory = Boolean(
+    app &&
+      purchases.some(
+        (purchase) =>
+          purchase.credit_type === "tour" &&
+          purchase.used_for_app_id === app.id &&
+          Boolean(purchase.used_at) &&
+          isPaidMapTourCreditStatus(purchase.status),
+      ),
+  );
   const areRailSectionsCollapsed = isPublic
     ? isStoryIntroCollapsed && isStoryPointsCollapsed
     : isTourDetailsCollapsed && isStoryPointsCollapsed;
@@ -1071,6 +1082,11 @@ export function MapTourPage() {
 
   async function uploadImages(files: FileList | null) {
     if (!files?.length || !selectedCard || !app || !user) {
+      return;
+    }
+
+    if (!isPaidStory) {
+      setError("Image uploads are available only for paid Map Stories. You can still add image URLs.");
       return;
     }
 
@@ -1909,23 +1925,27 @@ export function MapTourPage() {
                 <div className={styles.imageEditorHeader}>
                   <span>Images</span>
                   <div className={styles.imageActions}>
-                    <input
-                      ref={imageUploadRef}
-                      className={styles.hiddenImageInput}
-                      type="file"
-                      accept="image/*,.heic,.heif"
-                      multiple
-                      onChange={(event) => void uploadImages(event.target.files)}
-                    />
-                    <button
-                      type="button"
-                      className={styles.uploadImageButton}
-                      onClick={() => imageUploadRef.current?.click()}
-                      disabled={isUploadingImages}
-                    >
-                      <ImagePlus size={17} strokeWidth={2.4} aria-hidden="true" />
-                      {isUploadingImages ? "Converting…" : "Upload"}
-                    </button>
+                    {isPaidStory ? (
+                      <>
+                        <input
+                          ref={imageUploadRef}
+                          className={styles.hiddenImageInput}
+                          type="file"
+                          accept="image/*,.heic,.heif"
+                          multiple
+                          onChange={(event) => void uploadImages(event.target.files)}
+                        />
+                        <button
+                          type="button"
+                          className={styles.uploadImageButton}
+                          onClick={() => imageUploadRef.current?.click()}
+                          disabled={isUploadingImages}
+                        >
+                          <ImagePlus size={17} strokeWidth={2.4} aria-hidden="true" />
+                          {isUploadingImages ? "Converting…" : "Upload"}
+                        </button>
+                      </>
+                    ) : null}
                     <button
                       type="button"
                       className={styles.miniAddButton}
@@ -1937,7 +1957,11 @@ export function MapTourPage() {
                     </button>
                   </div>
                 </div>
-                <p className={styles.imageHelp}>JPEG, PNG, WebP, HEIC or HEIF. Converted to JPEG and limited to 2 MB.</p>
+                <p className={styles.imageHelp}>
+                  {isPaidStory
+                    ? "Upload JPEG, PNG, WebP, HEIC or HEIF, or add an image URL. Uploads are converted to JPEG and limited to 2 MB."
+                    : "Free Map Stories can add image URLs. Direct image uploads are available on paid stories."}
+                </p>
                 <div className={styles.imageUrlList}>
                   {(selectedCard.imageUrls.length ? selectedCard.imageUrls : [""]).map((imageUrl, index) => (
                     <div className={styles.imageUrlRow} key={`${selectedCard.id}-image-${index}`}>
