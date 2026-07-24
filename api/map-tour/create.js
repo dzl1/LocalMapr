@@ -1,37 +1,22 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { randomUUID } from "node:crypto";
-import type { Json } from "../../src/lib/database.types";
-import type { Database } from "../../src/lib/database.types";
-import {
-  FREE_MAP_TOUR_LIMIT,
-  getMapTourPointCount,
-  FREE_MAP_TOUR_POINT_LIMIT,
-  getUnusedTourCreditCount,
-  isMissingMapTourPurchasesTable,
-  MAP_TOUR_CREDIT_PRICE_LABEL,
-} from "../../src/lib/mapTourBilling";
-import {
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+const { randomUUID } = require("node:crypto");
+const {
   errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   readRawBody,
   sendJson,
-  type ApiRequest,
-  type ApiResponse,
-} from "../_utils";
+} = require("../billing/runtime.js");
 
-type CreatePayload = {
-  config?: Json;
-  description?: string | null;
-  slug?: string;
-  title?: string;
-};
-
-const defaultCenter: [number, number] = [-35.205, 173.95];
+const FREE_MAP_TOUR_LIMIT = 2;
+const FREE_MAP_TOUR_POINT_LIMIT = 4;
+const MAP_TOUR_CREDIT_PRICE_LABEL = "$1";
+const defaultCenter = [-35.205, 173.95];
 const defaultZoom = 11;
 const colors = ["#1f4834", "#2563eb", "#be123c", "#b45309", "#6d28d9"];
 
-function slugify(value: string) {
+function slugify(value) {
   return value
     .toLowerCase()
     .trim()
@@ -40,7 +25,7 @@ function slugify(value: string) {
     .slice(0, 52);
 }
 
-function createDefaultCard(index: number) {
+function createDefaultCard(index) {
   return {
     body: "",
     color: colors[index % colors.length],
@@ -54,7 +39,7 @@ function createDefaultCard(index: number) {
   };
 }
 
-function defaultConfig(): Json {
+function defaultConfig() {
   return {
     cards: [createDefaultCard(0)],
     center: defaultCenter,
@@ -62,10 +47,30 @@ function defaultConfig(): Json {
   };
 }
 
-async function isSuperAdmin(
-  supabase: SupabaseClient<Database>,
-  email?: string | null,
-) {
+function getMapTourPointCount(config) {
+  return Array.isArray(config?.cards) ? config.cards.length : 0;
+}
+
+function isMissingMapTourPurchasesTable(error) {
+  const code = typeof error?.code === "string" ? error.code : "";
+  const message = typeof error?.message === "string" ? error.message : "";
+
+  return (
+    (code === "PGRST205" || code === "42P01") &&
+    message.toLowerCase().includes("map_tour_purchases")
+  );
+}
+
+function getUnusedTourCreditCount(purchases) {
+  return purchases.filter(
+    (purchase) =>
+      purchase.credit_type === "tour" &&
+      !purchase.used_at &&
+      (purchase.status === "paid" || purchase.status === "completed"),
+  ).length;
+}
+
+async function isSuperAdmin(supabase, email) {
   if (!email) {
     return false;
   }
@@ -80,10 +85,7 @@ async function isSuperAdmin(
   return Boolean(data);
 }
 
-async function handleCreateMapTour(
-  request: ApiRequest,
-  response: ApiResponse,
-) {
+async function handleCreateMapTour(request, response) {
   if (request.method !== "POST") {
     sendJson(response, 405, { error: "Method not allowed." });
     return;
@@ -102,11 +104,11 @@ async function handleCreateMapTour(
     return;
   }
 
-  let payload: CreatePayload = {};
+  let payload = {};
 
   try {
     const body = await readRawBody(request);
-    payload = JSON.parse(String(body || "{}")) as CreatePayload;
+    payload = JSON.parse(String(body || "{}"));
   } catch {
     sendJson(response, 400, { error: "Invalid request body." });
     return;
@@ -139,16 +141,16 @@ async function handleCreateMapTour(
       { count: tourCount, error: tourCountError },
       { data: purchases, error: purchasesError },
     ] = await Promise.all([
-        supabase
-          .from("map_apps")
-          .select("id", { count: "exact", head: true })
-          .eq("owner_id", user.id)
-          .eq("app_type", "map_tour"),
-        supabase
-          .from("map_tour_purchases")
-          .select("credit_type,map_app_id,status,used_at")
-          .eq("user_id", user.id),
-      ]);
+      supabase
+        .from("map_apps")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", user.id)
+        .eq("app_type", "map_tour"),
+      supabase
+        .from("map_tour_purchases")
+        .select("credit_type,map_app_id,status,used_at")
+        .eq("user_id", user.id),
+    ]);
 
     if (tourCountError) {
       sendJson(response, 500, {
@@ -203,15 +205,13 @@ async function handleCreateMapTour(
   sendJson(response, 200, { app: inserted });
 }
 
-export default async function handler(
-  request: ApiRequest,
-  response: ApiResponse,
-) {
+module.exports = async function handler(request, response) {
   try {
     await handleCreateMapTour(request, response);
   } catch (error) {
+    console.error("map-tour/create handler failed:", error);
     sendJson(response, 500, {
       error: errorMessage(error, "Could not create Map Story."),
     });
   }
-}
+};
