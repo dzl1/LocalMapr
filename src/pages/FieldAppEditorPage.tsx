@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import L from "leaflet";
-import { GeoJSON as GeoJSONLayer, LayersControl, MapContainer, Marker, Popup, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import { GeoJSON as GeoJSONLayer, LayersControl, MapContainer, Marker, Pane, Popup, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import { ArrowLeft, Download, FileUp, Layers, MapPin, Plus, Save, Trash2 } from "lucide-react";
 import type { Database, Json } from "@/lib/database.types";
 import { EMAIL_VERIFICATION_REQUIRED_MESSAGE, isUserEmailVerified } from "@/lib/auth";
@@ -13,10 +13,12 @@ import "leaflet/dist/leaflet.css";
 import styles from "@/app/fieldapps/editor.module.css";
 
 type MapApp = Database["public"]["Tables"]["map_apps"]["Row"];
+type PointIconStyle = "dot" | "pin" | "square" | "diamond";
 type FieldLayer = {
   id: string;
   name: string;
   color: string;
+  pointIcon: PointIconStyle;
   visible: boolean;
   data: GeoFeatureCollection;
 };
@@ -31,6 +33,7 @@ type FieldConfig = { layers: FieldLayer[]; infoPoints: InfoPoint[] };
 type ExportFormat = "pdf" | "png" | "jpg";
 
 const colors = ["#0d8f5a", "#2563eb", "#dc6b2f", "#7c3aed", "#be123c", "#102136"];
+const pointIconStyles = new Set<PointIconStyle>(["dot", "pin", "square", "diamond"]);
 const FREE_LAYER_STORAGE_BYTES = 10 * 1024 * 1024;
 
 function serializedBytes(value: unknown) {
@@ -40,6 +43,12 @@ function serializedBytes(value: unknown) {
 function formatStorage(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(0.01, bytes / 1024).toFixed(2)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function parsePointIcon(value: Json | undefined): PointIconStyle {
+  return typeof value === "string" && pointIconStyles.has(value as PointIconStyle)
+    ? value as PointIconStyle
+    : "dot";
 }
 
 function parseConfig(config: Json): FieldConfig {
@@ -52,6 +61,7 @@ function parseConfig(config: Json): FieldConfig {
     id: typeof layer.id === "string" ? layer.id : crypto.randomUUID(),
     name: typeof layer.name === "string" ? layer.name : `Layer ${index + 1}`,
     color: typeof layer.color === "string" ? layer.color : colors[index % colors.length],
+    pointIcon: parsePointIcon(layer.pointIcon),
     visible: layer.visible !== false,
     data: layer.data as unknown as GeoFeatureCollection,
   })).filter((layer) => layer.data?.type === "FeatureCollection" && Array.isArray(layer.data.features));
@@ -84,6 +94,34 @@ function pointIcon(selected: boolean) {
     iconAnchor: [14, 28],
     popupAnchor: [0, -28],
     iconSize: [28, 28],
+  });
+}
+
+function importedPointMarker(style: PointIconStyle, color: string, latlng: L.LatLng) {
+  if (style === "dot") {
+    return L.circleMarker(latlng, {
+      radius: 7,
+      color: "#fff",
+      weight: 2,
+      fillColor: color,
+      fillOpacity: 1,
+    });
+  }
+
+  const marker = document.createElement("span");
+  marker.className = `${styles.layerPointIcon} ${styles[`layerPointIcon${style[0].toUpperCase()}${style.slice(1)}`]}`;
+  marker.style.setProperty("--layer-point-color", color);
+  marker.appendChild(document.createElement("span"));
+  const isPin = style === "pin";
+
+  return L.marker(latlng, {
+    icon: L.divIcon({
+      className: "",
+      html: marker,
+      iconAnchor: isPin ? [12, 24] : [10, 10],
+      iconSize: isPin ? [24, 24] : [20, 20],
+      popupAnchor: isPin ? [0, -24] : [0, -12],
+    }),
   });
 }
 
@@ -193,6 +231,7 @@ export function FieldAppEditorPage() {
         id: crypto.randomUUID(),
         name: file.name.replace(/\.(geojson|json|kml|gpx)$/i, ""),
         color: colors[(layers.length + index) % colors.length],
+        pointIcon: "dot" as const,
         visible: true,
         data: await parseGeoFile(file),
       })));
@@ -376,7 +415,9 @@ export function FieldAppEditorPage() {
           <div className={styles.layerHeading}><div><Layers size={17} /><strong>{layers.length} layers</strong></div><span>{featureCount} features</span></div>
           <div className={styles.layerList}>
             {layers.map((layer) => {
-              const geometrySummary = Object.entries(countGeometryTypes(layer.data)).map(([type, count]) => `${count} ${type}`).join(", ");
+              const geometryCounts = countGeometryTypes(layer.data);
+              const geometrySummary = Object.entries(geometryCounts).map(([type, count]) => `${count} ${type}`).join(", ");
+              const hasPointFeatures = Boolean(geometryCounts.Point || geometryCounts.MultiPoint);
               return <section className={styles.layer} key={layer.id}>
                 <div className={styles.layerTop}>
                   <input type="checkbox" checked={layer.visible} aria-label={`Show ${layer.name}`} onChange={(event) => { setLayers((current) => current.map((item) => item.id === layer.id ? { ...item, visible: event.target.checked } : item)); setDirty(true); }} />
@@ -385,6 +426,21 @@ export function FieldAppEditorPage() {
                   <button className={styles.remove} type="button" aria-label={`Remove ${layer.name}`} onClick={() => { setLayers((current) => current.filter((item) => item.id !== layer.id)); setDirty(true); }}><Trash2 size={16} /></button>
                 </div>
                 <p>{geometrySummary || "No features"}</p>
+                {hasPointFeatures ? (
+                  <label className={styles.pointIconSelect}>
+                    <span>Point symbol</span>
+                    <select value={layer.pointIcon} onChange={(event) => {
+                      const pointIcon = event.target.value as PointIconStyle;
+                      setLayers((current) => current.map((item) => item.id === layer.id ? { ...item, pointIcon } : item));
+                      setDirty(true);
+                    }}>
+                      <option value="dot">Dot</option>
+                      <option value="pin">Map pin</option>
+                      <option value="square">Square</option>
+                      <option value="diamond">Diamond</option>
+                    </select>
+                  </label>
+                ) : null}
               </section>;
             })}
             {!layers.length ? <p className={styles.empty}>Import a map file to create your first overlay.</p> : null}
@@ -393,13 +449,23 @@ export function FieldAppEditorPage() {
 
         <section ref={mapWrapRef} className={styles.mapWrap} aria-label="Field App map preview">
           <MapContainer ref={mapRef} center={[-35.205, 173.95]} zoom={11} zoomControl={false} preferCanvas className={styles.map}>
+            <Pane name="place-labels" style={{ zIndex: 450 }} />
             <LayersControl position="topright">
               <LayersControl.BaseLayer checked name="Street map">
-                <TileLayer attribution="&copy; OpenStreetMap contributors" crossOrigin="anonymous" url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <TileLayer attribution="&copy; OpenStreetMap contributors &copy; CARTO" crossOrigin="anonymous" maxZoom={19} url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png" />
+              </LayersControl.BaseLayer>
+              <LayersControl.BaseLayer name="Light">
+                <TileLayer attribution="&copy; OpenStreetMap contributors &copy; CARTO" crossOrigin="anonymous" maxZoom={19} url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png" />
+              </LayersControl.BaseLayer>
+              <LayersControl.BaseLayer name="Dark">
+                <TileLayer attribution="&copy; OpenStreetMap contributors &copy; CARTO" crossOrigin="anonymous" maxZoom={19} url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png" />
               </LayersControl.BaseLayer>
               <LayersControl.BaseLayer name="Satellite">
                 <TileLayer attribution="Tiles &copy; Esri and its data providers" crossOrigin="anonymous" maxZoom={19} url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
               </LayersControl.BaseLayer>
+              <LayersControl.Overlay checked name="Place names">
+                <TileLayer attribution="&copy; OpenStreetMap contributors &copy; CARTO" crossOrigin="anonymous" maxZoom={19} pane="place-labels" url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png" />
+              </LayersControl.Overlay>
             </LayersControl>
             <ZoomControl position="bottomright" />
             <FitLayers layers={layers} />
@@ -411,7 +477,7 @@ export function FieldAppEditorPage() {
               setDirty(true);
             }} />
             {layers.filter((layer) => layer.visible).map((layer) => (
-              <GeoJSONLayer key={`${layer.id}-${layer.color}`} data={layer.data as GeoJSON.GeoJsonObject} style={{ color: layer.color, fillColor: layer.color, fillOpacity: 0.22, weight: 3 }} pointToLayer={(_feature, latlng) => L.circleMarker(latlng, { radius: 7, color: "#fff", weight: 2, fillColor: layer.color, fillOpacity: 1 })} onEachFeature={(feature, leafletLayer) => {
+              <GeoJSONLayer key={`${layer.id}-${layer.color}-${layer.pointIcon}`} data={layer.data as GeoJSON.GeoJsonObject} style={{ color: layer.color, fillColor: layer.color, fillOpacity: 0.22, weight: 3 }} pointToLayer={(_feature, latlng) => importedPointMarker(layer.pointIcon, layer.color, latlng)} onEachFeature={(feature, leafletLayer) => {
                 const properties = feature.properties as Record<string, unknown> | undefined;
                 const popup = properties ? importedFeaturePopup(properties) : null;
                 if (popup) leafletLayer.bindPopup(popup);

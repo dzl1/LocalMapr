@@ -50,8 +50,16 @@
 .color { width: 27px; height: 27px; padding: 1px; border: 0; border-radius: 5px; background: transparent; cursor: pointer; }
 .remove { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 5px; color: #9a4235; background: transparent; cursor: pointer; }.remove:hover { background: #fff0ed; }
 .layer p { margin: 6px 0 0 26px; color: #7a857e; font-size: 10px; }
+.pointIconSelect { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 9px; margin: 10px 0 0 26px; color: #647168; font-size: 10px; font-weight: 750; }
+.pointIconSelect select { min-width: 0; padding: 7px 24px 7px 8px; border: 1px solid #d7e2dc; border-radius: 6px; color: #20352b; background: #fbfdfc; font: inherit; font-size: 11px; }
+.pointIconSelect select:focus { outline: 2px solid rgba(13,143,90,.14); border-color: #70aa8a; }
 .empty { padding: 18px 8px; color: #75827a; font-size: 12px; line-height: 1.5; text-align: center; }
 .mapWrap { position: relative; min-width: 0; }.map { width: 100%; height: 100%; background: #dce7df; }
+.layerPointIcon { --layer-point-color: #0d8f5a; position: relative; display: block; width: 20px; height: 20px; border: 2px solid #fff; background: var(--layer-point-color); box-shadow: 0 2px 7px rgba(16,33,54,.32); }
+.layerPointIcon > span { position: absolute; inset: 50% auto auto 50%; width: 6px; height: 6px; border-radius: 50%; background: #fff; transform: translate(-50%, -50%); }
+.layerPointIconPin { width: 24px; height: 24px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+.layerPointIconSquare { border-radius: 3px; }
+.layerPointIconDiamond { border-radius: 3px; transform: rotate(45deg); }
 .pointMarker { position: relative; display: block; width: 28px; height: 28px; border: 3px solid #fff; border-radius: 50% 50% 50% 0; background: #0d8f5a; box-shadow: 0 3px 9px rgba(16,33,54,.35); transform: rotate(-45deg); transition: transform .15s ease; }.pointMarker > span { position: absolute; width: 8px; height: 8px; top: 7px; left: 7px; border-radius: 50%; background: #fff; }.pointMarkerSelected { background: #102136; transform: rotate(-45deg) scale(1.18); }
 .pointPopup article { min-width: 190px; max-width: 280px; padding: 3px; }.pointPopup article > span { color: #0d8f5a; font-size: 9px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }.pointPopup h3 { margin-top: 5px; color: #142b20; font-size: 16px; line-height: 1.25; }.pointPopup p { margin-top: 8px; color: #53645b; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }.pointPopup small { display: block; margin-top: 10px; color: #8a938e; font-size: 9px; }
 .importedPopup { min-width: 180px; max-width: 280px; }.importedPopup h3 { margin-bottom: 8px; color: #153225; font-size: 15px; }.importedPopup p { display: grid; grid-template-columns: minmax(55px, .7fr) 1fr; gap: 8px; margin-top: 5px; color: #55645c; font-size: 11px; line-height: 1.35; }.importedPopup strong { overflow-wrap: anywhere; color: #243c30; text-transform: capitalize; }.importedPopup span { overflow-wrap: anywhere; }

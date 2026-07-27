@@ -1,3 +1,4 @@
+import { useLayoutEffect } from "react";
 import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { Footer } from "./app/components/Footer";
 import { AdminPage } from "./pages/AdminPage";
@@ -5,6 +6,7 @@ import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { ContactPage } from "./pages/ContactPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { FieldAppEditorPage } from "./pages/FieldAppEditorPage";
+import { FieldAppsPage } from "./pages/FieldAppsPage";
 import { HelpPage } from "./pages/HelpPage";
 import { HomePage } from "./pages/HomePage";
 import { LocalGuideEditorPage } from "./pages/LocalGuideEditorPage";
@@ -21,26 +23,40 @@ function LegacyMapStoryRedirect({ publicStory = false }: { publicStory?: boolean
   return <Navigate to={target} replace />;
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   const location = useLocation();
   const isMapStoriesHome =
     location.pathname === "/map-stories" || location.pathname === "/map-stories/";
+  const isFieldAppsHome =
+    location.pathname === "/field-apps" || location.pathname === "/field-apps/";
   const hideFooter =
     location.pathname.startsWith("/story/") ||
     location.pathname.startsWith("/tour/") ||
     location.pathname.startsWith("/guide/") ||
-    location.pathname.startsWith("/field-apps/") ||
+    (!isFieldAppsHome && location.pathname.startsWith("/field-apps/")) ||
     location.pathname.startsWith("/local-guides/") ||
     (!isMapStoriesHome && location.pathname.startsWith("/map-stories/")) ||
     location.pathname.startsWith("/map-tour/");
 
   return (
     <>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/field-apps" element={<FieldAppsPage />} />
         <Route path="/field-apps/:id" element={<FieldAppEditorPage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/pricing" element={<PricingPage />} />
